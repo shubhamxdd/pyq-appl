@@ -2,42 +2,51 @@
 
 ## Current Phase
 
-- Phase 1: Project Scaffolding & Infrastructure (Ready to Start)
+- Phase 2: Auth & User Management (In Progress)
 
 ## Current Goal
 
-- Initialize backend (FastAPI) and frontend (React) structures with the updated "No RAG" and "OpenRouter" strategy.
+- Implement User Authentication (Email/Password + Google OAuth).
 
 ## Completed
 
-- **Initial context setup**: Populated `context/` with updated decisions (Python backend, OpenRouter, Light/Dark themes, No RAG).
+- **Initial context setup**: Populated `context/` with updated decisions.
+- **Git Initialization**: Repository initialized with `.gitignore`.
+- **Backend Scaffolding**: 
+    - Folder structure created.
+    - `Dockerfile` and `docker-compose.yml` configured (Port 8001).
+    - SQLAlchemy models defined.
+    - Database and Redis connectivity verified.
+- **Frontend Scaffolding**:
+    - Vite + React + TypeScript project initialized.
+    - Tailwind CSS v4 configured.
+- **Infrastructure Verification**: API and Workers confirmed running in Docker.
 
 ## In Progress
 
-- Waiting for user's green light to begin implementation.
+- Designing the Auth strategy for Python + React.
 
 ## Next Up
 
-1. Backend Project Scaffold:
-    - FastAPI setup.
-    - Docker Compose for Postgres, Redis, and API.
-    - SQLAlchemy models (User, Resource, Question, Paper, Job).
-2. Frontend Project Scaffold:
-    - Vite + React + Tailwind (Dark mode configured).
-    - Base layouts and theme provider.
+1. **Authentication**:
+    - Implement JWT-based auth in FastAPI.
+    - Setup Google OAuth 2.0.
+    - Create Login/Register UI in React.
+2. **Resource Management**:
+    - File upload service (R2).
+    - PDF text extraction service.
 
 ## Open Questions
 
-- **Model Selection**: Which specific OpenRouter models to prioritize? (Suggesting Claude 3.5 Sonnet for accuracy).
-- **Text Storage**: For very large PDFs (e.g., 500 pages), should we implement a basic truncation or simple "split and pass" strategy since we aren't using vector DB?
+- **Auth Framework**: Since we switched to Python, do you want to use a Python-native auth (like FastAPI Users) instead of "Better Auth" (which is JS-only)?
+- **Model Selection**: Which specific OpenRouter models to prioritize? (Suggesting Claude 3.5 Sonnet).
 
 ## Architecture Decisions
 
-- **No RAG**: MVP will pass full document text to LLM to simplify infrastructure and speed up development.
-- **Automatic Delivery**: The system handles the switch between SSE streaming and ARQ background polling seamlessly.
-- **Python Backend**: Chosen for superior PDF text extraction (`pdfplumber`) and generation (`WeasyPrint`).
+- **No RAG**: MVP will pass full document text to LLM to simplify infrastructure.
+- **Automatic Delivery**: System handles switch between SSE and ARQ background polling.
+- **Python Backend**: Port 8001 (Port 8000 had host conflicts).
 
 ## Session Notes
 
-- Architecture has been simplified: removed ChromaDB, LangChain, and embedding pipelines.
-- UI will support both Light and Dark modes from the start.
+- Infrastructure is stable. API is responsive at http://localhost:8001.
