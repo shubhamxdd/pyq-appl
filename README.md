@@ -20,12 +20,14 @@ cp .env.example .env
 - `Cloudflare R2 Credentials`: For file storage.
 
 ### 3. Start Backend Services (Docker)
-This starts PostgreSQL, Redis, and the FastAPI server with hot-reload enabled.
+This starts PostgreSQL, Redis, and the FastAPI server.
 ```bash
 docker-compose up --build
 ```
-- **API URL**: [http://localhost:8000](http://localhost:8000)
-- **Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **API URL**: [http://127.0.0.1:8001](http://127.0.0.1:8001)
+- **Docs**: [http://127.0.0.1:8001/docs](http://127.0.0.1:8001/docs)
+
+> **Note:** If `localhost:8001` hangs, always use `127.0.0.1:8001`. This avoids IPv6/WSL relay conflicts on Windows.
 
 ### 4. Start Frontend (React)
 Open a new terminal:
