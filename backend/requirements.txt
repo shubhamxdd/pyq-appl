@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+sqlalchemy[asyncio]
+asyncpg
+alembic
+python-multipart
+python-jose[cryptography]
+passlib[bcrypt]
+httpx
+arq
+redis
+pdfplumber
+weasyprint
+jinja2
+boto3
+python-dotenv
