@@ -124,23 +124,34 @@ export default function Solver() {
             </h2>
             {readyResources.length === 0 ? (
               <p className="text-xs text-gray-400 italic">No processed resources found. Upload and wait for "Ready" status.</p>
-            ) : (
-              <div className="space-y-2">
-                {readyResources.map(res => (
-                  <button
-                    key={res.id}
-                    onClick={() => toggleResource(res.id)}
-                    className={clsx(
-                      "w-full text-left p-3 rounded-lg text-sm transition-all border",
-                      selectedResources.includes(res.id)
-                        ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300 shadow-sm"
-                        : "bg-gray-50 border-transparent text-gray-600 hover:bg-gray-100 dark:bg-gray-900/50 dark:text-gray-400 dark:hover:bg-gray-900"
-                    )}
-                  >
-                    <p className="font-medium truncate">{res.filename}</p>
-                    <p className="text-[10px] uppercase opacity-60">{res.type}</p>
-                  </button>
-                ))}
+            import { Send, Zap, BookOpen, User, Bot, Loader2, AlertCircle, ExternalLink } from 'lucide-react';
+            ...
+                            {readyResources.map(res => (
+                              <div key={res.id} className="relative group">
+                                <button
+                                  onClick={() => toggleResource(res.id)}
+                                  className={clsx(
+                                    "w-full text-left p-3 rounded-lg text-sm transition-all border pr-10",
+                                    selectedResources.includes(res.id)
+                                      ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300 shadow-sm"
+                                      : "bg-gray-50 border-transparent text-gray-600 hover:bg-gray-100 dark:bg-gray-900/50 dark:text-gray-400 dark:hover:bg-gray-900"
+                                  )}
+                                >
+                                  <p className="font-medium truncate">{res.filename}</p>
+                                  <p className="text-[10px] uppercase opacity-60">{res.type}</p>
+                                </button>
+                                <a
+                                  href={res.file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="Open File"
+                                >
+                                  <ExternalLink className="w-4 h-4" />
+                                </a>
+                              </div>
+                            ))}
+
               </div>
             )}
           </div>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { resourcesApi, type Resource } from '../api/resources';
-import { FileText, Trash2, Upload, Loader2, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
+import { FileText, Trash2, Upload, Loader2, CheckCircle, XCircle, Clock, RefreshCw, ExternalLink } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function Resources() {
@@ -174,6 +174,15 @@ export default function Resources() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end gap-2">
+                      <a
+                        href={res.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-2"
+                        title="View File"
+                      >
+                        <ExternalLink className="w-5 h-5" />
+                      </a>
                       {res.status === 'failed' && (
                         <button
                           onClick={() => retryMutation.mutate(res.id)}
