@@ -178,7 +178,7 @@ async def ask_question(
         user_id=current_user.id,
         session_id=session_id,
         content=data.content,
-        delivery_mode="stream"
+        delivery_mode=data.delivery_mode
     )
     db.add(new_question)
     await db.flush()
