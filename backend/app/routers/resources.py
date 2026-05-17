@@ -28,8 +28,23 @@ async def upload_resource(
             detail="Only PDF and Text files are supported"
         )
     
-    # Read file content
-    content = await file.read()
+    # Chunked read with size enforcement (CodeRabbit fix)
+    MAX_BYTES = settings.MAX_FILE_SIZE_MB * 1024 * 1024
+    CHUNK_SIZE = 1024 * 1024 # 1MB chunks
+    content = bytearray()
+    total_size = 0
+    
+    while True:
+        chunk = await file.read(CHUNK_SIZE)
+        if not chunk:
+            break
+        total_size += len(chunk)
+        if total_size > MAX_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"File too large. Maximum size allowed is {settings.MAX_FILE_SIZE_MB}MB"
+            )
+        content.extend(chunk)
     
     # Generate unique filename for storage
     ext = file.filename.split('.')[-1]

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 import { resourcesApi, type Resource } from '../api/resources';
 import { FileText, Trash2, Upload, Loader2, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -24,6 +25,11 @@ export default function Resources() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resources'] });
       setFile(null);
+      toast.success('File uploaded successfully!');
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.detail || 'Failed to upload file.';
+      toast.error(message);
     },
   });
 
@@ -31,6 +37,10 @@ export default function Resources() {
     mutationFn: resourcesApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resources'] });
+      toast.success('Resource deleted');
+    },
+    onError: () => {
+      toast.error('Failed to delete resource');
     },
   });
 
@@ -38,6 +48,10 @@ export default function Resources() {
     mutationFn: resourcesApi.retry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resources'] });
+      toast.success('Processing restarted');
+    },
+    onError: () => {
+      toast.error('Failed to restart processing');
     },
   });
 

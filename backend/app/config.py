@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     # OCR Settings
     MAX_OCR_PAGES: int = 12
     
+    # Upload Settings
+    MAX_FILE_SIZE_MB: int = 20
+    
     # JWT Settings
     JWT_SECRET_KEY: str
     ALGORITHM: str = "HS256"
