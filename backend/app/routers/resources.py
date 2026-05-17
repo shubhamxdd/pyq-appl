@@ -58,7 +58,7 @@ async def upload_resource(
             detail="Failed to upload file to storage"
         )
     
-    # Create DB record
+    # Create DB record (not committed yet)
     new_resource = Resource(
         user_id=current_user.id,
         filename=file.filename,
@@ -67,12 +67,23 @@ async def upload_resource(
         status="processing"
     )
     db.add(new_resource)
-    await db.commit()
-    await db.refresh(new_resource)
+    await db.flush() # Flush to get the ID but don't commit
     
-    # Enqueue background extraction task
-    redis = await create_pool(RedisSettings.from_dsn(settings.REDIS_URL))
-    await redis.enqueue_job('extraction_task', str(new_resource.id))
+    # Enqueue background extraction task before committing DB
+    try:
+        redis = await create_pool(RedisSettings.from_dsn(settings.REDIS_URL))
+        await redis.enqueue_job('extraction_task', str(new_resource.id))
+        
+        # Only commit if enqueue was successful
+        await db.commit()
+        await db.refresh(new_resource)
+    except Exception as e:
+        await db.rollback()
+        # Should also ideally delete the file from Spaces here if we were strict
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to queue background task: {str(e)}"
+        )
     
     return new_resource
 
@@ -124,13 +135,22 @@ async def retry_extraction(
     if not resource:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
     
-    # Update status to processing
+    # Update status to processing (don't commit yet)
     resource.status = "processing"
-    await db.commit()
-    await db.refresh(resource)
     
-    # Re-enqueue background extraction task
-    redis = await create_pool(RedisSettings.from_dsn(settings.REDIS_URL))
-    await redis.enqueue_job('extraction_task', str(resource.id))
+    # Re-enqueue background extraction task before committing DB
+    try:
+        redis = await create_pool(RedisSettings.from_dsn(settings.REDIS_URL))
+        await redis.enqueue_job('extraction_task', str(resource.id))
+        
+        # Only commit if enqueue was successful
+        await db.commit()
+        await db.refresh(resource)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to queue background task: {str(e)}"
+        )
     
     return resource
