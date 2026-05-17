@@ -25,9 +25,13 @@ async def extraction_task(ctx, resource_id: str):
         try:
             # For PDF files
             if resource.filename.lower().endswith('.pdf'):
-                # Download file from DO Spaces
+                # Handle CDN URL issue: if CDN isn't enabled, the .cdn. URL won't resolve.
+                # We strip '.cdn.' to use the direct spaces URL for the internal worker request.
+                download_url = resource.file_url.replace(".cdn.digitaloceanspaces.com", ".digitaloceanspaces.com")
+                logging.info(f"Downloading file from: {download_url}")
+                
                 async with httpx.AsyncClient() as client:
-                    response = await client.get(resource.file_url)
+                    response = await client.get(download_url)
                     if response.status_code != 200:
                         raise Exception(f"Failed to download file from storage: {response.status_code}")
                     file_content = response.content
