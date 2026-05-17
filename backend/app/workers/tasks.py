@@ -50,7 +50,7 @@ async def extraction_task(ctx, resource_id: str):
                     pil_image.save(img_byte_arr, format='JPEG', quality=85)
                     img_base64 = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
                     
-                    # Call OpenRouter Vision Model (Claude 3.5 Sonnet)
+                    # Call OpenRouter Vision Model (Switching to Gemini Flash 1.5 - often has free tier)
                     async with httpx.AsyncClient(timeout=60.0) as client:
                         vision_response = await client.post(
                             "https://openrouter.ai/api/v1/chat/completions",
@@ -60,7 +60,7 @@ async def extraction_task(ctx, resource_id: str):
                                 "HTTP-Referer": settings.FRONTEND_URL,
                             },
                             json={
-                                "model": "anthropic/claude-3.5-sonnet",
+                                "model": "google/gemini-flash-1.5-8b", # Free/Low cost vision model
                                 "messages": [
                                     {
                                         "role": "user",
@@ -82,8 +82,9 @@ async def extraction_task(ctx, resource_id: str):
                             page_text = vision_response.json()['choices'][0]['message']['content']
                             full_text.append(f"--- Page {i+1} ---\n{page_text}")
                         else:
-                            logging.error(f"Vision API error on page {i+1}: {vision_response.text}")
-                            full_text.append(f"--- Page {i+1} ---\n[Error extracting text]")
+                            error_msg = f"Vision API error on page {i+1}: {vision_response.status_code} - {vision_response.text}"
+                            logging.error(error_msg)
+                            raise Exception(error_msg)
 
                 resource.extracted_text = "\n\n".join(full_text)
                 resource.status = "ready"
