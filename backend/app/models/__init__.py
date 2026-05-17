@@ -1,5 +1,6 @@
 from .base import Base
 from .user import User
+from .chat_session import ChatSession
 from .resource import Resource
 from .question import Question, question_resources
 from .answer import Answer
@@ -10,6 +11,7 @@ from .job import Job
 __all__ = [
     "Base",
     "User",
+    "ChatSession",
     "Resource",
     "Question",
     "question_resources",

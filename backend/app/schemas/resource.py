@@ -16,5 +16,8 @@ class ResourceOut(ResourceBase):
     
     model_config = ConfigDict(from_attributes=True)
 
+class ResourceUpdate(BaseModel):
+    filename: Optional[str] = None
+
 class ResourceList(BaseModel):
     resources: List[ResourceOut]

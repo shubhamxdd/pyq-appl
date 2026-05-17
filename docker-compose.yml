@@ -37,6 +37,8 @@ services:
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
     depends_on:
       - postgres
+    volumes:
+    - pgadmin_data:/var/lib/pgadmin
 
   redis:
     image: redis:7-alpine
@@ -58,3 +60,4 @@ services:
 
 volumes:
   postgres_data:
+  pgadmin_data:

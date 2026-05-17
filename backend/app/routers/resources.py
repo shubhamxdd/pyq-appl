@@ -3,10 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 import uuid
+import pypdfium2 as pdfium
 from ..database import get_db
 from ..models.user import User
 from ..models.resource import Resource
-from ..schemas.resource import ResourceOut
+from ..schemas.resource import ResourceOut, ResourceUpdate
 from ..routers.auth import get_current_user
 from ..services.storage import storage_service
 from arq import create_pool
@@ -46,6 +47,24 @@ async def upload_resource(
             )
         content.extend(chunk)
     
+    # Page count check for PDFs (User Request)
+    if file.content_type == "application/pdf":
+        try:
+            pdf = pdfium.PdfDocument(bytes(content))
+            num_pages = len(pdf)
+            if num_pages > settings.MAX_OCR_PAGES:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"File has {num_pages} pages. Maximum {settings.MAX_OCR_PAGES} pages allowed for processing."
+                )
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid or corrupted PDF file: {str(e)}"
+            )
+
     # Generate unique filename for storage
     ext = file.filename.split('.')[-1]
     object_name = f"user_{current_user.id}/{uuid.uuid4()}.{ext}"
@@ -127,6 +146,28 @@ async def delete_resource(
     
     return {"message": "Resource deleted successfully"}
 
+@router.patch("/{resource_id}", response_model=ResourceOut)
+async def update_resource(
+    resource_id: uuid.UUID,
+    data: ResourceUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(
+        select(Resource).where(Resource.id == resource_id, Resource.user_id == current_user.id)
+    )
+    resource = result.scalar_one_or_none()
+    
+    if not resource:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+    
+    if data.filename:
+        resource.filename = data.filename
+        
+    await db.commit()
+    await db.refresh(resource)
+    return resource
+
 @router.post("/{resource_id}/retry", response_model=ResourceOut)
 async def retry_extraction(
     resource_id: uuid.UUID,
@@ -158,5 +199,28 @@ async def retry_extraction(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to queue background task: {str(e)}"
         )
+    
+    return resource
+
+@router.post("/{resource_id}/stop", response_model=ResourceOut)
+async def stop_processing(
+    resource_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(
+        select(Resource).where(Resource.id == resource_id, Resource.user_id == current_user.id)
+    )
+    resource = result.scalar_one_or_none()
+    
+    if not resource:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+    
+    # Mark as failed ONLY if it is still processing.
+    # If it is already 'ready', we don't want to overwrite it.
+    if resource.status == "processing":
+        resource.status = "failed"
+        await db.commit()
+        await db.refresh(resource)
     
     return resource

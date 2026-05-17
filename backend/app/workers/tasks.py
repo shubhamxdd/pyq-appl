@@ -17,58 +17,76 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 async def extraction_task(ctx, resource_id: str):
-    print(f"--- Extraction Task Started: {resource_id} ---")
+    print(f"\n🚀 [TASK START] Resource ID: {resource_id}")
     
     async with SessionLocal() as db:
         try:
-            # Fetch resource
+            # 1. Fetch Resource
             result = await db.execute(select(Resource).where(Resource.id == resource_id))
             resource = result.scalar_one_or_none()
             
             if not resource:
-                print(f"DEBUG: Resource {resource_id} not found in DB")
+                print(f"❌ [DB ERROR] Resource {resource_id} not found.")
                 return
             
-            print(f"DEBUG: Resource found: {resource.filename} | URL: {resource.file_url}")
-            
-            # For PDF files
+            print(f"📄 [PROCESSING] Filename: {resource.filename} | Type: {resource.type}")
+
+            # 2. Check for initial cancellation
+            if resource.status != "processing":
+                print(f"⚠️ [ABORTED] Task aborted before starting (Status: {resource.status})")
+                return
+
+            # 3. Handle PDF Files
             if resource.filename.lower().endswith('.pdf'):
-                print(f"DEBUG: Starting PDF Download for {resource.filename}...")
+                print("📥 [STEP 1/3] Downloading PDF from Storage...")
                 
-                # Handle CDN URL issue: if CDN isn't enabled, the .cdn. URL won't resolve.
+                # Handle CDN URL issue
                 download_url = resource.file_url.replace(".cdn.digitaloceanspaces.com", ".digitaloceanspaces.com")
                 
-                async with httpx.AsyncClient(timeout=30.0) as client:
+                async with httpx.AsyncClient(timeout=45.0) as client:
                     response = await client.get(download_url)
                     if response.status_code != 200:
                         raise Exception(f"Storage download failed: HTTP {response.status_code}")
                     file_content = response.content
                 
-                print(f"DEBUG: Downloaded {len(file_content)} bytes. Starting PDFium...")
+                print(f"✅ [SUCCESS] Downloaded {len(file_content) / 1024 / 1024:.2f} MB")
                 
-                # Load PDF
+                # 4. Process Pages
+                print("⚙️ [STEP 2/3] Initializing PDFium renderer...")
                 pdf = pdfium.PdfDocument(file_content)
                 num_pages = len(pdf)
                 pages_to_process = min(num_pages, settings.MAX_OCR_PAGES)
-                print(f"DEBUG: Processing {pages_to_process} pages...")
+                print(f"🔍 [INFO] Total Pages: {num_pages} | Processing Limit: {pages_to_process}")
                 
                 full_text = []
                 
                 for i in range(pages_to_process):
-                    print(f"DEBUG: Rendering Page {i+1}/{pages_to_process}...")
+                    # Robust Cancellation Check
+                    async with SessionLocal() as check_db:
+                        check_res = await check_db.execute(select(Resource).where(Resource.id == resource_id))
+                        db_res = check_res.scalar_one_or_none()
+                        if not db_res or db_res.status != "processing":
+                            print(f"🛑 [STOPPED] Cancellation detected at Page {i+1}. Aborting loop.")
+                            return
+                        
+                        # Update Progress %
+                        progress = int(((i + 1) / pages_to_process) * 100)
+                        db_res.processing_progress = progress
+                        await check_db.commit()
+                        print(f"📊 [PROGRESS] {progress}% completed.")
+
+                    print(f"📸 [PAGE {i+1}/{pages_to_process}] Rendering & Base64 Encoding...")
                     page = pdf[i]
-                    # Render page to image
                     bitmap = page.render(scale=2) 
                     pil_image = bitmap.to_pil()
                     
-                    # Convert to base64
                     img_byte_arr = io.BytesIO()
                     pil_image.save(img_byte_arr, format='JPEG', quality=85)
                     img_base64 = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
                     
-                    print(f"DEBUG: Sending Page {i+1} to OpenRouter (Nvidia Model)...")
+                    print(f"📡 [PAGE {i+1}/{pages_to_process}] Sending to OpenRouter (Nvidia Model)...")
                     
-                    async with httpx.AsyncClient(timeout=90.0) as client:
+                    async with httpx.AsyncClient(timeout=120.0) as client:
                         vision_response = await client.post(
                             "https://openrouter.ai/api/v1/chat/completions",
                             headers={
@@ -99,42 +117,52 @@ async def extraction_task(ctx, resource_id: str):
                         if vision_response.status_code == 200:
                             page_text = vision_response.json()['choices'][0]['message']['content']
                             full_text.append(f"--- Page {i+1} ---\n{page_text}")
-                            print(f"DEBUG: Page {i+1} completed.")
+                            print(f"✨ [PAGE {i+1}] Extraction successful.")
                         else:
-                            error_msg = f"Vision API error on page {i+1}: {vision_response.status_code} - {vision_response.text}"
-                            print(f"ERROR: {error_msg}")
+                            error_msg = f"Vision API error: {vision_response.status_code} - {vision_response.text}"
                             raise Exception(error_msg)
+
+                # Final Status Check before committing
+                async with SessionLocal() as final_check:
+                    f_res = await final_check.execute(select(Resource).where(Resource.id == resource_id))
+                    db_res_final = f_res.scalar_one_or_none()
+                    if not db_res_final or db_res_final.status != "processing":
+                        print("🛑 [ABORTED] Final commit skipped. User stopped task during last page.")
+                        return
 
                 resource.extracted_text = "\n\n".join(full_text)
                 resource.status = "ready"
-                print("DEBUG: Extraction successful. Status set to READY.")
+                print(f"💾 [STEP 3/3] Saving extracted text to DB...")
+                await db.commit()
+                print(f"🏁 [TASK COMPLETE] Resource {resource_id} is now READY.\n")
             
             elif resource.filename.lower().endswith('.txt'):
-                print("DEBUG: Processing text file...")
+                print("📝 [TEXT] Extracting plain text content...")
                 async with httpx.AsyncClient() as client:
                     response = await client.get(resource.file_url)
                     resource.extracted_text = response.text
                     resource.status = "ready"
-                print("DEBUG: Text extraction complete.")
+                await db.commit()
+                print("🏁 [TASK COMPLETE] Text file is READY.\n")
             
             else:
                 resource.status = "failed"
-                print(f"DEBUG: Unsupported file type: {resource.filename}")
-
-            await db.commit()
+                print(f"❌ [ERROR] Unsupported file type: {resource.filename}")
+                await db.commit()
 
         except Exception as e:
             error_trace = traceback.format_exc()
-            print(f"CRITICAL ERROR in extraction_task: {str(e)}")
-            print(error_trace)
+            print(f"💥 [CRITICAL ERROR] Task Failed: {str(e)}")
+            print(f"Stack Trace:\n{error_trace}")
 
-            # Attempt to mark as failed in DB
             try:
-                # Use a fresh query for the update
-                result = await db.execute(select(Resource).where(Resource.id == resource_id))
-                res = result.scalar_one_or_none()
-                if res:
-                    res.status = "failed"
-                    await db.commit()
-            except Exception as commit_err:
-                print(f"DEBUG: Final status update failed: {commit_err}")
+                # Re-fetch to ensure we have a valid object to update status
+                async with SessionLocal() as err_db:
+                    update_result = await err_db.execute(select(Resource).where(Resource.id == resource_id))
+                    res_to_fail = update_result.scalar_one_or_none()
+                    if res_to_fail and res_to_fail.status == "processing":
+                        res_to_fail.status = "failed"
+                        await err_db.commit()
+                        print(f"📉 [DB] Resource {resource_id} marked as FAILED.")
+            except Exception as final_err:
+                print(f"💀 [FATAL] Could not even mark as failed: {final_err}")

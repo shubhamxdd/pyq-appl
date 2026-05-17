@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, UUID, ForeignKey, Text
+from sqlalchemy import Column, String, DateTime, UUID, ForeignKey, Text, Integer
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
@@ -13,6 +13,7 @@ class Resource(Base):
     file_url = Column(String, nullable=False)
     type = Column(String, nullable=False) # notes | syllabus | past_paper | other
     status = Column(String, default="pending") # pending | processing | ready | failed
+    processing_progress = Column(Integer, default=0)
     extracted_text = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

@@ -19,3 +19,4 @@ class User(Base):
     questions = relationship("Question", back_populates="user", cascade="all, delete-orphan")
     papers = relationship("Paper", back_populates="user", cascade="all, delete-orphan")
     jobs = relationship("Job", back_populates="user", cascade="all, delete-orphan")
+    chat_sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
