@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Resources from './pages/Resources';
+import Solver from './pages/Solver';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import { useAuthStore } from './store/authStore';
@@ -67,9 +68,18 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/solver"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Solver />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Fallbacks */}
-          <Route path="/solver" element={<Navigate to="/" replace />} />
           <Route path="/generator" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

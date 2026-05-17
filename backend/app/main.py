@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import auth, resources
+from .routers import auth, resources, solver
 from .config import settings
 
 app = FastAPI(title="PYQ Solver API")
@@ -17,6 +17,7 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(resources.router, prefix="/api")
+app.include_router(solver.router, prefix="/api")
 
 @app.get("/")
 async def root():

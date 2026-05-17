@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Phase 3: Resource Management (In Review)
+- Phase 4: PYQ Solver (Ready for Review)
 
 ## Current Goal
 
-- Verify File Uploads and Vision OCR.
+- Implement AI-powered question answering with document context and streaming.
 
 ## Completed
 
@@ -17,36 +17,36 @@
 - **Phase 3: Resource Management**:
     - DigitalOcean Spaces integration for S3-compatible storage.
     - Multipart file upload API with background task enqueuing.
-    - Vision-model-based text extraction (Claude 3.5 Sonnet) capped at 12 pages.
+    - Vision-model-based text extraction (Gemini 1.5 Flash) capped at 12 pages.
     - Frontend Resource Dashboard with real-time status polling.
     - Modern Sidebar Layout with Dark/Light mode support.
+- **Phase 4: PYQ Solver**:
+    - Prompt engineering for academic tutoring.
+    - OpenRouter streaming client.
+    - SSE (Server-Sent Events) backend routing.
+    - Real-time chat interface with markdown rendering.
+    - Multi-resource context selection.
 
 ## In Progress
 
-- Verification and testing of the end-to-end upload and extraction flow.
+- Verification and testing of the end-to-end Solver flow.
 
 ## Next Up
 
-1. **Phase 4: PYQ Solver**:
-    - `POST /api/questions`: Submit question with document context.
-    - Streaming SSE response with OpenRouter.
-    - Citation linking.
-2. **Phase 5: Sample Paper Generator**:
+1. **Phase 5: Sample Paper Generator**:
     - Automatic format detection.
     - JSON paper generation.
 
 ## Open Questions
 
-- **OCR Accuracy**: Does the 2x scaling in `pypdfium2` provide enough detail for handwritten notes, or should we increase it?
-- **Model Selection**: Sticking with Claude 3.5 Sonnet for its superior vision/reasoning for now.
+- **Context Window**: For very large documents, we might need a basic truncation strategy until we implement RAG.
 
 ## Architecture Decisions
 
-- **No RAG**: MVP will pass full document text to LLM to simplify infrastructure.
-- **Vision OCR**: Using Vision models to process scanned PDFs instead of traditional OCR engines.
-- **Python Backend**: Chosen for superior PDF/Image processing capabilities.
+- **SSE (Server-Sent Events)**: Chosen for real-time streaming of LLM tokens.
+- **No RAG**: Full document text passed to prompt for better accuracy in small-to-medium documents.
 
 ## Session Notes
 
-- Resources are uploaded to DO Spaces and then processed in a background worker.
-- The UI polls the resource status every 3 seconds until 'ready' or 'failed'.
+- Phase 4 implemented on `feature/pyq-solver`.
+- Users can now select resources and ask questions in real-time.
