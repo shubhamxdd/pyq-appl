@@ -43,11 +43,13 @@ A web application designed for students (K-12 and college) to upload their study
 
 ### In Scope
 - Python (FastAPI) backend for robust PDF processing.
-- Long-context LLM via OpenRouter (No vector DB).
+- Long-context LLM via OpenRouter.
 - PDF and Plain Text file support.
+- OCR/AI-based text extraction for scanned documents.
 - Email/Password and Google OAuth authentication.
 - Automatic routing between Streaming and Background processing.
 - PDF Export for answers and papers.
+- DigitalOcean Object Storage (Spaces).
 
 ### Out of Scope (Deferred to v0.2+)
 - Image and handwriting support (Vision models).

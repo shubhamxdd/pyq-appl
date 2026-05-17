@@ -2,46 +2,51 @@
 
 ## Current Phase
 
-- Phase 3: Resource Management (Not Started)
+- Phase 3: Resource Management (In Review)
 
 ## Current Goal
 
-- Implement File Uploads to Cloudflare R2 and PDF Text Extraction.
+- Verify File Uploads and Vision OCR.
 
 ## Completed
 
 - **Initial context setup**: Populated `context/` with updated decisions.
 - **Git Initialization**: Repository initialized with branch-based workflow.
-- **Infrastructure**: Backend/Frontend scaffolded, Docker services running (Port 8001), `pgadmin` added.
-- **Phase 2: Authentication**:
-    - JWT-based registration and login implemented.
-    - Protected dashboard and route guards in React.
-    - Database tables created via Alembic.
-    - `bcrypt` version compatibility fixed.
+- **Infrastructure**: Backend/Frontend scaffolded, Docker services running.
+- **Phase 2: Authentication**: Full-stack JWT and Google OAuth logic.
+- **Phase 3: Resource Management**:
+    - DigitalOcean Spaces integration for S3-compatible storage.
+    - Multipart file upload API with background task enqueuing.
+    - Vision-model-based text extraction (Claude 3.5 Sonnet) capped at 12 pages.
+    - Frontend Resource Dashboard with real-time status polling.
+    - Modern Sidebar Layout with Dark/Light mode support.
 
 ## In Progress
 
-- Designing Phase 3: R2 Storage & Extraction.
+- Verification and testing of the end-to-end upload and extraction flow.
 
 ## Next Up
 
-1. **Resource Management**:
-    - `POST /api/resources`: Upload file to Cloudflare R2.
-    - `extraction_task`: Background job to parse PDF text via `pdfplumber`.
-    - `GET /api/resources`: List user resources.
-    - Frontend Resource Upload UI.
+1. **Phase 4: PYQ Solver**:
+    - `POST /api/questions`: Submit question with document context.
+    - Streaming SSE response with OpenRouter.
+    - Citation linking.
+2. **Phase 5: Sample Paper Generator**:
+    - Automatic format detection.
+    - JSON paper generation.
 
 ## Open Questions
 
-- **Auth Framework**: Since we switched to Python, do you want to use a Python-native auth (like FastAPI Users) instead of "Better Auth" (which is JS-only)?
-- **Model Selection**: Which specific OpenRouter models to prioritize? (Suggesting Claude 3.5 Sonnet).
+- **OCR Accuracy**: Does the 2x scaling in `pypdfium2` provide enough detail for handwritten notes, or should we increase it?
+- **Model Selection**: Sticking with Claude 3.5 Sonnet for its superior vision/reasoning for now.
 
 ## Architecture Decisions
 
 - **No RAG**: MVP will pass full document text to LLM to simplify infrastructure.
-- **Automatic Delivery**: System handles switch between SSE and ARQ background polling.
-- **Python Backend**: Port 8001 (Port 8000 had host conflicts).
+- **Vision OCR**: Using Vision models to process scanned PDFs instead of traditional OCR engines.
+- **Python Backend**: Chosen for superior PDF/Image processing capabilities.
 
 ## Session Notes
 
-- Infrastructure is stable. API is responsive at http://localhost:8001.
+- Resources are uploaded to DO Spaces and then processed in a background worker.
+- The UI polls the resource status every 3 seconds until 'ready' or 'failed'.
