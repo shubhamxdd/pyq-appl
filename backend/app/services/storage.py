@@ -39,15 +39,4 @@ class StorageService:
             logging.error(f"Error deleting file from DigitalOcean Spaces: {e}")
             return False
 
-    def download_file(self, object_name: str):
-        try:
-            response = self.client.get_object(
-                Bucket=settings.SPACES_BUCKET,
-                Key=object_name
-            )
-            return response['Body'].read()
-        except ClientError as e:
-            logging.error(f"Error downloading file from DigitalOcean Spaces: {e}")
-            return None
-
 storage_service = StorageService()
