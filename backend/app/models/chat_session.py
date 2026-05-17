@@ -14,4 +14,4 @@ class ChatSession(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     user = relationship("User", back_populates="chat_sessions")
-    questions = relationship("Question", back_populates="session", cascade="all, delete-orphan")
+    questions = relationship("Question", back_populates="session", cascade="all")
