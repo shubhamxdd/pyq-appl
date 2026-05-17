@@ -113,9 +113,15 @@ async def delete_resource(
     
     # Delete from Spaces
     object_name = resource.file_url.replace(f"{settings.SPACES_PUBLIC_URL}/", "")
-    storage_service.delete_file(object_name)
+    success = storage_service.delete_file(object_name)
     
-    # Delete from DB
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete file from cloud storage. Database record preserved."
+        )
+    
+    # Delete from DB only after storage is confirmed deleted
     await db.delete(resource)
     await db.commit()
     
