@@ -2,39 +2,34 @@
 
 ## Current Phase
 
-- Phase 2: Auth & User Management (In Progress)
+- Phase 3: Resource Management (Not Started)
 
 ## Current Goal
 
-- Implement User Authentication (Email/Password + Google OAuth).
+- Implement File Uploads to Cloudflare R2 and PDF Text Extraction.
 
 ## Completed
 
 - **Initial context setup**: Populated `context/` with updated decisions.
-- **Git Initialization**: Repository initialized with `.gitignore`.
-- **Backend Scaffolding**: 
-    - Folder structure created.
-    - `Dockerfile` and `docker-compose.yml` configured (Port 8001).
-    - SQLAlchemy models defined.
-    - Database and Redis connectivity verified.
-- **Frontend Scaffolding**:
-    - Vite + React + TypeScript project initialized.
-    - Tailwind CSS v4 configured.
-- **Infrastructure Verification**: API and Workers confirmed running in Docker.
+- **Git Initialization**: Repository initialized with branch-based workflow.
+- **Infrastructure**: Backend/Frontend scaffolded, Docker services running (Port 8001), `pgadmin` added.
+- **Phase 2: Authentication**:
+    - JWT-based registration and login implemented.
+    - Protected dashboard and route guards in React.
+    - Database tables created via Alembic.
+    - `bcrypt` version compatibility fixed.
 
 ## In Progress
 
-- Designing the Auth strategy for Python + React.
+- Designing Phase 3: R2 Storage & Extraction.
 
 ## Next Up
 
-1. **Authentication**:
-    - Implement JWT-based auth in FastAPI.
-    - Setup Google OAuth 2.0.
-    - Create Login/Register UI in React.
-2. **Resource Management**:
-    - File upload service (R2).
-    - PDF text extraction service.
+1. **Resource Management**:
+    - `POST /api/resources`: Upload file to Cloudflare R2.
+    - `extraction_task`: Background job to parse PDF text via `pdfplumber`.
+    - `GET /api/resources`: List user resources.
+    - Frontend Resource Upload UI.
 
 ## Open Questions
 
