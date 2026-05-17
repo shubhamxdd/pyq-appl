@@ -26,8 +26,7 @@ class OpenRouterClient:
             async with client.stream("POST", self.base_url, headers=headers, json=payload) as response:
                 if response.status_code != 200:
                     error_text = await response.aread()
-                    yield f"Error: {response.status_code} - {error_text.decode()}"
-                    return
+                    raise RuntimeError(f"OpenRouter Error: {response.status_code} - {error_text.decode()}")
 
                 async for line in response.aiter_lines():
                     if not line or line == "":
