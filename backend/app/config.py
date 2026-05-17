@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     R2_BUCKET_NAME: str
     R2_PUBLIC_URL: str
     
+    # JWT Settings
+    JWT_SECRET_KEY: str
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 days
+    
     FRONTEND_URL: str = "http://localhost:5173"
     
     class Config:
