@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 import uuid
+import pypdfium2 as pdfium
 from ..database import get_db
 from ..models.user import User
 from ..models.resource import Resource
@@ -46,6 +47,24 @@ async def upload_resource(
             )
         content.extend(chunk)
     
+    # Page count check for PDFs (User Request)
+    if file.content_type == "application/pdf":
+        try:
+            pdf = pdfium.PdfDocument(bytes(content))
+            num_pages = len(pdf)
+            if num_pages > settings.MAX_OCR_PAGES:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"File has {num_pages} pages. Maximum {settings.MAX_OCR_PAGES} pages allowed for processing."
+                )
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid or corrupted PDF file: {str(e)}"
+            )
+
     # Generate unique filename for storage
     ext = file.filename.split('.')[-1]
     object_name = f"user_{current_user.id}/{uuid.uuid4()}.{ext}"
