@@ -37,4 +37,8 @@ export const resourcesApi = {
     const response = await api.post<Resource>(`/resources/${id}/stop`);
     return response.data;
   },
+  update: async (id: string, data: { filename?: string }) => {
+    const response = await api.patch<Resource>(`/resources/${id}`, data);
+    return response.data;
+  },
 };

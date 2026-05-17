@@ -6,7 +6,7 @@ import uuid
 from ..database import get_db
 from ..models.user import User
 from ..models.resource import Resource
-from ..schemas.resource import ResourceOut
+from ..schemas.resource import ResourceOut, ResourceUpdate
 from ..routers.auth import get_current_user
 from ..services.storage import storage_service
 from arq import create_pool
@@ -126,6 +126,28 @@ async def delete_resource(
     await db.commit()
     
     return {"message": "Resource deleted successfully"}
+
+@router.patch("/{resource_id}", response_model=ResourceOut)
+async def update_resource(
+    resource_id: uuid.UUID,
+    data: ResourceUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(
+        select(Resource).where(Resource.id == resource_id, Resource.user_id == current_user.id)
+    )
+    resource = result.scalar_one_or_none()
+    
+    if not resource:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+    
+    if data.filename:
+        resource.filename = data.filename
+        
+    await db.commit()
+    await db.refresh(resource)
+    return resource
 
 @router.post("/{resource_id}/retry", response_model=ResourceOut)
 async def retry_extraction(

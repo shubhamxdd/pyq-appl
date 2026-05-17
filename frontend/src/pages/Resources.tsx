@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { resourcesApi, type Resource } from '../api/resources';
-import { FileText, Trash2, Upload, Loader2, CheckCircle, XCircle, Clock, RefreshCw, ExternalLink, Square } from 'lucide-react';
+import { FileText, Trash2, Upload, Loader2, CheckCircle, XCircle, Clock, RefreshCw, ExternalLink, Square, Edit2, Check, X } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function Resources() {
@@ -10,12 +10,13 @@ export default function Resources() {
   const [file, setFile] = useState<File | null>(null);
   const [type, setType] = useState('notes');
   const [isUploading, setIsUploading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [newFilename, setNewFilename] = useState('');
 
   const { data: resources, isLoading, isError } = useQuery({
     queryKey: ['resources'],
     queryFn: resourcesApi.list,
     refetchInterval: (query) => {
-      // Poll if any resource is still processing
       return query.state.data?.some(r => r.status === 'processing') ? 3000 : false;
     }
   });
@@ -41,6 +42,19 @@ export default function Resources() {
     },
     onError: () => {
       toast.error('Failed to delete resource');
+    },
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: ({ id, filename }: { id: string; filename: string }) => 
+      resourcesApi.update(id, { filename }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resources'] });
+      setEditingId(null);
+      toast.success('Resource renamed');
+    },
+    onError: () => {
+      toast.error('Failed to rename resource');
     },
   });
 
@@ -75,6 +89,28 @@ export default function Resources() {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this resource? This will permanently remove the file.')) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  const handleStop = (id: string) => {
+    if (window.confirm('Abort processing? This will stop the AI extraction for this file.')) {
+      stopMutation.mutate(id);
+    }
+  };
+
+  const startRenaming = (id: string, currentName: string) => {
+    setEditingId(id);
+    setNewFilename(currentName);
+  };
+
+  const handleRename = (id: string) => {
+    if (!newFilename.trim()) return;
+    renameMutation.mutate({ id, filename: newFilename });
   };
 
   const getStatusIcon = (status: string) => {
@@ -167,7 +203,39 @@ export default function Resources() {
             ) : (
               resources.map((res) => (
                 <tr key={res.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{res.filename}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    {editingId === res.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={newFilename}
+                          onChange={(e) => setNewFilename(e.target.value)}
+                          className="bg-white dark:bg-gray-700 border border-blue-500 rounded px-2 py-1 text-sm focus:outline-none"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleRename(res.id);
+                            if (e.key === 'Escape') setEditingId(null);
+                          }}
+                        />
+                        <button onClick={() => handleRename(res.id)} className="text-green-600">
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => setEditingId(null)} className="text-red-400">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 group/name">
+                        <span className="truncate max-w-[200px]">{res.filename}</span>
+                        <button 
+                          onClick={() => startRenaming(res.id, res.filename)}
+                          className="opacity-0 group-hover/name:opacity-100 text-gray-400 hover:text-blue-600 transition-opacity"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 capitalize">{res.type.replace('_', ' ')}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex items-center gap-2">
@@ -205,7 +273,7 @@ export default function Resources() {
                       )}
                       {res.status === 'processing' && (
                         <button
-                          onClick={() => stopMutation.mutate(res.id)}
+                          onClick={() => handleStop(res.id)}
                           className="text-orange-600 hover:text-orange-900 dark:hover:text-orange-400 p-2"
                           title="Stop Processing"
                         >
@@ -213,7 +281,7 @@ export default function Resources() {
                         </button>
                       )}
                       <button
-                        onClick={() => deleteMutation.mutate(res.id)}
+                        onClick={() => handleDelete(res.id)}
                         className="text-red-600 hover:text-red-900 dark:hover:text-red-400 p-2"
                         title="Delete Resource"
                       >
