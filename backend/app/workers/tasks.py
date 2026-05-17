@@ -55,6 +55,15 @@ async def extraction_task(ctx, resource_id: str):
                 full_text = []
                 
                 for i in range(pages_to_process):
+                    # CHECK FOR CANCELLATION (CodeRabbit/User Request)
+                    # We check if the user has manually set the status to 'failed' or deleted it
+                    async with SessionLocal() as check_db:
+                        check_res = await check_db.execute(select(Resource).where(Resource.id == resource_id))
+                        current_res = check_res.scalar_one_or_none()
+                        if not current_res or current_res.status != "processing":
+                            print(f"DEBUG: Processing aborted for {resource_id} (Status changed or deleted)")
+                            return # Exit the task immediately
+
                     print(f"DEBUG: Rendering Page {i+1}/{pages_to_process}...")
                     page = pdf[i]
                     # Render page to image

@@ -33,4 +33,8 @@ export const resourcesApi = {
     const response = await api.post<Resource>(`/resources/${id}/retry`);
     return response.data;
   },
+  stop: async (id: string) => {
+    const response = await api.post<Resource>(`/resources/${id}/stop`);
+    return response.data;
+  },
 };

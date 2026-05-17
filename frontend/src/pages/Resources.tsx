@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { resourcesApi, type Resource } from '../api/resources';
-import { FileText, Trash2, Upload, Loader2, CheckCircle, XCircle, Clock, RefreshCw, ExternalLink } from 'lucide-react';
+import { FileText, Trash2, Upload, Loader2, CheckCircle, XCircle, Clock, RefreshCw, ExternalLink, Square } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function Resources() {
@@ -52,6 +52,17 @@ export default function Resources() {
     },
     onError: () => {
       toast.error('Failed to restart processing');
+    },
+  });
+
+  const stopMutation = useMutation({
+    mutationFn: resourcesApi.stop,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resources'] });
+      toast.success('Processing stopped');
+    },
+    onError: () => {
+      toast.error('Failed to stop processing');
     },
   });
 
@@ -190,6 +201,15 @@ export default function Resources() {
                           title="Retry Processing"
                         >
                           <RefreshCw className={clsx("w-5 h-5", retryMutation.isPending && "animate-spin")} />
+                        </button>
+                      )}
+                      {res.status === 'processing' && (
+                        <button
+                          onClick={() => stopMutation.mutate(res.id)}
+                          className="text-orange-600 hover:text-orange-900 dark:hover:text-orange-400 p-2"
+                          title="Stop Processing"
+                        >
+                          <Square className={clsx("w-4 h-4 fill-current", stopMutation.isPending && "animate-pulse")} />
                         </button>
                       )}
                       <button

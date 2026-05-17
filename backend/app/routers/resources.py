@@ -160,3 +160,25 @@ async def retry_extraction(
         )
     
     return resource
+
+@router.post("/{resource_id}/stop", response_model=ResourceOut)
+async def stop_processing(
+    resource_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(
+        select(Resource).where(Resource.id == resource_id, Resource.user_id == current_user.id)
+    )
+    resource = result.scalar_one_or_none()
+    
+    if not resource:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+    
+    # Mark as failed. The background worker checks this status before every page
+    # and will abort if it sees the status is no longer 'processing'.
+    resource.status = "failed"
+    await db.commit()
+    await db.refresh(resource)
+    
+    return resource
