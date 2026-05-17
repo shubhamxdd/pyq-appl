@@ -15,3 +15,4 @@ weasyprint
 jinja2
 boto3
 python-dotenv
+email-validator
