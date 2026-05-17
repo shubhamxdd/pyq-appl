@@ -94,3 +94,28 @@ async def delete_resource(
     await db.commit()
     
     return {"message": "Resource deleted successfully"}
+
+@router.post("/{resource_id}/retry", response_model=ResourceOut)
+async def retry_extraction(
+    resource_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(
+        select(Resource).where(Resource.id == resource_id, Resource.user_id == current_user.id)
+    )
+    resource = result.scalar_one_or_none()
+    
+    if not resource:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
+    
+    # Update status to processing
+    resource.status = "processing"
+    await db.commit()
+    await db.refresh(resource)
+    
+    # Re-enqueue background extraction task
+    redis = await create_pool(RedisSettings.from_dsn(settings.REDIS_URL))
+    await redis.enqueue_job('extraction_task', str(resource.id))
+    
+    return resource

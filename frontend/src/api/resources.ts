@@ -29,4 +29,8 @@ export const resourcesApi = {
     const response = await api.delete(`/resources/${id}`);
     return response.data;
   },
+  retry: async (id: string) => {
+    const response = await api.post<Resource>(`/resources/${id}/retry`);
+    return response.data;
+  },
 };

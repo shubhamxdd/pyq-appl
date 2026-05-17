@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { resourcesApi, Resource } from '../api/resources';
-import { FileText, Trash2, Upload, Loader2, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { resourcesApi, type Resource } from '../api/resources';
+import { FileText, Trash2, Upload, Loader2, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function Resources() {
@@ -29,6 +29,13 @@ export default function Resources() {
 
   const deleteMutation = useMutation({
     mutationFn: resourcesApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resources'] });
+    },
+  });
+
+  const retryMutation = useMutation({
+    mutationFn: resourcesApi.retry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resources'] });
     },
@@ -145,13 +152,24 @@ export default function Resources() {
                     {new Date(res.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => deleteMutation.mutate(res.id)}
-                      className="text-red-600 hover:text-red-900 dark:hover:text-red-400 p-2"
-                      title="Delete Resource"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                    <div className="flex justify-end gap-2">
+                      {res.status === 'failed' && (
+                        <button
+                          onClick={() => retryMutation.mutate(res.id)}
+                          className="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400 p-2"
+                          title="Retry Processing"
+                        >
+                          <RefreshCw className={clsx("w-5 h-5", retryMutation.isPending && "animate-spin")} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => deleteMutation.mutate(res.id)}
+                        className="text-red-600 hover:text-red-900 dark:hover:text-red-400 p-2"
+                        title="Delete Resource"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
