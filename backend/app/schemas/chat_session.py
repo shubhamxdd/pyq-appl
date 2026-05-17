@@ -9,6 +9,9 @@ class ChatSessionBase(BaseModel):
 class ChatSessionCreate(ChatSessionBase):
     pass
 
+class ChatSessionUpdate(BaseModel):
+    title: Optional[str] = None
+
 class ChatSessionOut(ChatSessionBase):
     id: UUID
     user_id: UUID

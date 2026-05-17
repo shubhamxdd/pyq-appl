@@ -12,7 +12,7 @@ from ..models.question import Question
 from ..models.answer import Answer
 from ..models.chat_session import ChatSession
 from ..schemas.question import QuestionCreate
-from ..schemas.chat_session import ChatSessionOut, ChatSessionCreate
+from ..schemas.chat_session import ChatSessionOut, ChatSessionCreate, ChatSessionUpdate
 from ..routers.auth import get_current_user
 from ..llm.client import open_router_client
 from ..llm.prompts import SOLVER_SYSTEM, SOLVER_USER_TEMPLATE
@@ -97,6 +97,27 @@ async def delete_session(
     await db.delete(session)
     await db.commit()
     return {"message": "Session deleted"}
+
+@router.patch("/sessions/{session_id}", response_model=ChatSessionOut)
+async def update_session(
+    session_id: uuid.UUID,
+    data: ChatSessionUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(
+        select(ChatSession).where(ChatSession.id == session_id, ChatSession.user_id == current_user.id)
+    )
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    if data.title:
+        session.title = data.title
+        
+    await db.commit()
+    await db.refresh(session)
+    return session
 
 # --- QUESTION ENDPOINTS ---
 

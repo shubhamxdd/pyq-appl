@@ -31,6 +31,10 @@ export const solverApi = {
     const response = await api.delete(`/solver/sessions/${id}`);
     return response.data;
   },
+  updateSession: async (id: string, data: { title: string }) => {
+    const response = await api.patch<ChatSession>(`/solver/sessions/${id}`, data);
+    return response.data;
+  },
   ask: async (data: { content: string; resource_ids: string[]; session_id?: string }) => {
     const token = localStorage.getItem('token');
     return fetch('http://127.0.0.1:8001/api/solver/ask', {
