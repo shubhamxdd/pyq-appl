@@ -6,6 +6,7 @@ export interface Resource {
   type: 'notes' | 'syllabus' | 'past_paper' | 'other';
   file_url: string;
   status: 'pending' | 'processing' | 'ready' | 'failed';
+  processing_progress: number;
   created_at: string;
 }
 

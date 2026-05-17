@@ -238,14 +238,24 @@ export default function Resources() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 capitalize">{res.type.replace('_', ' ')}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(res.status)}
-                      <span className={clsx(
-                        "text-xs font-semibold",
-                        res.status === 'ready' ? "text-green-600" : res.status === 'failed' ? "text-red-600" : "text-blue-600"
-                      )}>
-                        {res.status.toUpperCase()}
-                      </span>
+                    <div className="flex flex-col gap-1.5 min-w-[120px]">
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(res.status)}
+                        <span className={clsx(
+                          "text-xs font-semibold",
+                          res.status === 'ready' ? "text-green-600" : res.status === 'failed' ? "text-red-600" : "text-blue-600"
+                        )}>
+                          {res.status.toUpperCase()}
+                        </span>
+                      </div>
+                      {res.status === 'processing' && (
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                          <div 
+                            className="bg-blue-600 h-full transition-all duration-500 ease-out" 
+                            style={{ width: `${res.processing_progress}%` }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
