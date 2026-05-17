@@ -37,12 +37,18 @@ export const solverApi = {
   },
   ask: async (data: { content: string; resource_ids: string[]; session_id?: string }) => {
     const token = localStorage.getItem('token');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    // Using 127.0.0.1:8001 as the source of truth for local dev
     return fetch('http://127.0.0.1:8001/api/solver/ask', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
+      headers,
       body: JSON.stringify(data),
     });
   },

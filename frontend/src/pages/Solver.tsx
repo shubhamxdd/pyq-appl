@@ -48,11 +48,13 @@ export default function Solver() {
   });
 
   const deleteSessionMutation = useMutation({
-    mutationFn: solverApi.deleteSession,
-    onSuccess: () => {
+    mutationFn: (id: string) => solverApi.deleteSession(id),
+    onSuccess: (_, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      if (activeSessionId) setActiveSessionId(null);
-      setMessages([]);
+      if (activeSessionId === deletedId) {
+        setActiveSessionId(null);
+        setMessages([]);
+      }
       toast.success('Session deleted');
     },
   });

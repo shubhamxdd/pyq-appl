@@ -38,7 +38,7 @@ async def extraction_task(ctx, resource_id: str):
 
             # 3. Handle PDF Files
             if resource.filename.lower().endswith('.pdf'):
-                print(f"📥 [STEP 1/3] Downloading PDF from Storage...")
+                print("📥 [STEP 1/3] Downloading PDF from Storage...")
                 
                 # Handle CDN URL issue
                 download_url = resource.file_url.replace(".cdn.digitaloceanspaces.com", ".digitaloceanspaces.com")
@@ -52,7 +52,7 @@ async def extraction_task(ctx, resource_id: str):
                 print(f"✅ [SUCCESS] Downloaded {len(file_content) / 1024 / 1024:.2f} MB")
                 
                 # 4. Process Pages
-                print(f"⚙️ [STEP 2/3] Initializing PDFium renderer...")
+                print("⚙️ [STEP 2/3] Initializing PDFium renderer...")
                 pdf = pdfium.PdfDocument(file_content)
                 num_pages = len(pdf)
                 pages_to_process = min(num_pages, settings.MAX_OCR_PAGES)
@@ -64,8 +64,8 @@ async def extraction_task(ctx, resource_id: str):
                     # Robust Cancellation Check
                     async with SessionLocal() as check_db:
                         check_res = await check_db.execute(select(Resource).where(Resource.id == resource_id))
-                        db_res = check_res.scalar_one()
-                        if db_res.status != "processing":
+                        db_res = check_res.scalar_one_or_none()
+                        if not db_res or db_res.status != "processing":
                             print(f"🛑 [STOPPED] Cancellation detected at Page {i+1}. Aborting loop.")
                             return
                         
@@ -125,8 +125,9 @@ async def extraction_task(ctx, resource_id: str):
                 # Final Status Check before committing
                 async with SessionLocal() as final_check:
                     f_res = await final_check.execute(select(Resource).where(Resource.id == resource_id))
-                    if f_res.scalar_one().status != "processing":
-                        print(f"🛑 [ABORTED] Final commit skipped. User stopped task during last page.")
+                    db_res_final = f_res.scalar_one_or_none()
+                    if not db_res_final or db_res_final.status != "processing":
+                        print("🛑 [ABORTED] Final commit skipped. User stopped task during last page.")
                         return
 
                 resource.extracted_text = "\n\n".join(full_text)
