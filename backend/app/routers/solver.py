@@ -158,8 +158,15 @@ async def ask_question(
         )
 
     # 3. Handle Session
-    session_id = data.session_id
-    if not session_id:
+    if data.session_id:
+        # Verify ownership of existing session
+        sess_result = await db.execute(
+            select(ChatSession).where(ChatSession.id == data.session_id, ChatSession.user_id == current_user.id)
+        )
+        if not sess_result.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Chat session not found")
+        session_id = data.session_id
+    else:
         # Auto-create session if none provided
         new_sess = ChatSession(user_id=current_user.id, title=data.content[:30] + "...")
         db.add(new_sess)
