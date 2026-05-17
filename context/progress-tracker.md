@@ -6,7 +6,7 @@
 
 ## Current Goal
 
-- Implement File Uploads to Cloudflare R2 and PDF Text Extraction.
+- Implement File Uploads to DigitalOcean Spaces and OCR-capable PDF Extraction.
 
 ## Completed
 
@@ -39,6 +39,13 @@
 ## Architecture Decisions
 
 - **No RAG**: MVP will pass full document text to LLM to simplify infrastructure.
+- **Automatic Delivery**: System handles switch between SSE and ARQ background polling.
+- **Python Backend**: Port 8001 (Port 8000 had host conflicts).
+
+## Session Notes
+
+- Infrastructure is stable. API is responsive at http://localhost:8001.
+M to simplify infrastructure.
 - **Automatic Delivery**: System handles switch between SSE and ARQ background polling.
 - **Python Backend**: Port 8001 (Port 8000 had host conflicts).
 

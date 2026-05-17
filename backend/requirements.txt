@@ -16,4 +16,6 @@ weasyprint
 jinja2
 boto3
 python-dotenv
+pypdfium2
+pillow
 email-validator

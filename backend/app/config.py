@@ -9,11 +9,16 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
     
-    R2_ACCOUNT_ID: str
-    R2_ACCESS_KEY_ID: str
-    R2_SECRET_ACCESS_KEY: str
-    R2_BUCKET_NAME: str
-    R2_PUBLIC_URL: str
+    # DigitalOcean Spaces
+    SPACES_ENDPOINT: str
+    SPACES_KEY: str
+    SPACES_SECRET: str
+    SPACES_BUCKET: str
+    SPACES_REGION: str = "nyc3"
+    SPACES_PUBLIC_URL: str
+    
+    # OCR Settings
+    MAX_OCR_PAGES: int = 12
     
     # JWT Settings
     JWT_SECRET_KEY: str

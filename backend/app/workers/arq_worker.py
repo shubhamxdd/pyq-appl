@@ -1,6 +1,7 @@
 import asyncio
 from arq.connections import RedisSettings
 from app.config import settings
+from .tasks import extraction_task
 
 async def ping(ctx):
     return "pong"
@@ -12,7 +13,7 @@ async def shutdown(ctx):
     pass
 
 class WorkerSettings:
-    functions = [ping]
+    functions = [ping, extraction_task]
     on_startup = startup
     on_shutdown = shutdown
     redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)

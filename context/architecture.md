@@ -28,7 +28,7 @@
 ## Storage Model
 
 - **PostgreSQL**: Metadata for users, resources, extracted text, questions, answers, papers, and jobs.
-- **Cloudflare R2**: Original uploaded PDFs and generated PDF exports.
+- **DigitalOcean Spaces**: Original uploaded PDFs and generated PDF exports.
 - **Redis**: Job queue state and application caching.
 - **Vector Storage**: *REMOVED for MVP*. Documents are passed directly to LLM context.
 
