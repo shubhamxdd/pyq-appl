@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     SPACES_KEY: str
     SPACES_SECRET: str
     SPACES_BUCKET: str
-    SPACES_REGION: str = "nyc3"
+    SPACES_REGION: str
     SPACES_PUBLIC_URL: str
     
     # OCR Settings
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 days
     
     FRONTEND_URL: str = "http://localhost:5173"
-    
+    QUESTIONS_LIMIT: int = 30
     class Config:
         env_file = ".env"
 

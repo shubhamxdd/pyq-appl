@@ -16,6 +16,8 @@ from ..schemas.chat_session import ChatSessionOut, ChatSessionCreate, ChatSessio
 from ..routers.auth import get_current_user
 from ..llm.client import open_router_client
 from ..llm.prompts import SOLVER_SYSTEM, SOLVER_USER_TEMPLATE
+from ..config import settings
+
 
 router = APIRouter(prefix="/solver", tags=["solver"])
 
@@ -128,7 +130,7 @@ async def ask_question(
     current_user: User = Depends(get_current_user)
 ):
     # 1. Quota Check
-    if current_user.plan == "free" and current_user.questions_used >= 10:
+    if current_user.plan == "free" and current_user.questions_used >= settings.QUESTIONS_LIMIT:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Monthly question quota exceeded for free tier."
