@@ -17,10 +17,12 @@ class Question(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    session_id = Column(UUID(as_uuid=True), ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=True)
     content = Column(Text, nullable=False)
     delivery_mode = Column(String, nullable=False) # stream | background
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="questions")
+    session = relationship("ChatSession", back_populates="questions")
     resources = relationship("Resource", secondary=question_resources)
     answer = relationship("Answer", back_populates="question", uselist=False, cascade="all, delete-orphan")

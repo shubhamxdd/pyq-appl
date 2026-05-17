@@ -6,11 +6,13 @@ from datetime import datetime
 class QuestionCreate(BaseModel):
     content: str
     resource_ids: List[UUID]
+    session_id: Optional[UUID] = None
     delivery_mode: str = "stream" # stream | background
 
 class QuestionOut(BaseModel):
     id: UUID
     user_id: UUID
+    session_id: Optional[UUID] = None
     content: str
     delivery_mode: str
     created_at: datetime

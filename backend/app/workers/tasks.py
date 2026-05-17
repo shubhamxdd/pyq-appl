@@ -64,10 +64,16 @@ async def extraction_task(ctx, resource_id: str):
                     # Robust Cancellation Check
                     async with SessionLocal() as check_db:
                         check_res = await check_db.execute(select(Resource).where(Resource.id == resource_id))
-                        current_status = check_res.scalar_one().status
-                        if current_status != "processing":
+                        db_res = check_res.scalar_one()
+                        if db_res.status != "processing":
                             print(f"🛑 [STOPPED] Cancellation detected at Page {i+1}. Aborting loop.")
                             return
+                        
+                        # Update Progress %
+                        progress = int(((i + 1) / pages_to_process) * 100)
+                        db_res.processing_progress = progress
+                        await check_db.commit()
+                        print(f"📊 [PROGRESS] {progress}% completed.")
 
                     print(f"📸 [PAGE {i+1}/{pages_to_process}] Rendering & Base64 Encoding...")
                     page = pdf[i]
