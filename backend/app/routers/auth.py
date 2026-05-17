@@ -5,9 +5,10 @@ from sqlalchemy import select
 from jose import JWTError, jwt
 from ..database import get_db
 from ..models.user import User
-from ..schemas.user import UserCreate, UserLogin, UserOut, Token, TokenData
+from ..schemas.user import UserCreate, UserLogin, UserOut, Token, TokenData, GoogleLogin
 from ..services.security import get_password_hash, verify_password, create_access_token
 from ..config import settings
+import httpx
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -70,6 +71,51 @@ async def login(user_in: UserLogin, db: AsyncSession = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    access_token = create_access_token(subject=user.id)
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/google", response_model=Token)
+async def google_login(data: GoogleLogin, db: AsyncSession = Depends(get_db)):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://oauth2.googleapis.com/tokeninfo?id_token={data.id_token}"
+        )
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid Google token"
+            )
+        
+        google_data = response.json()
+        email = google_data.get("email")
+        google_id = google_data.get("sub")
+        
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Google account must have an email"
+            )
+
+    # Check if user exists
+    result = await db.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        # Create new user via Google
+        user = User(
+            email=email,
+            google_id=google_id,
+            plan="free"
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+    elif not user.google_id:
+        # Link existing email account to Google ID
+        user.google_id = google_id
+        await db.commit()
+        await db.refresh(user)
+        
     access_token = create_access_token(subject=user.id)
     return {"access_token": access_token, "token_type": "bearer"}
 
