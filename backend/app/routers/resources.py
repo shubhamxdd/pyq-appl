@@ -216,10 +216,11 @@ async def stop_processing(
     if not resource:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
     
-    # Mark as failed. The background worker checks this status before every page
-    # and will abort if it sees the status is no longer 'processing'.
-    resource.status = "failed"
-    await db.commit()
-    await db.refresh(resource)
+    # Mark as failed ONLY if it is still processing.
+    # If it is already 'ready', we don't want to overwrite it.
+    if resource.status == "processing":
+        resource.status = "failed"
+        await db.commit()
+        await db.refresh(resource)
     
     return resource
