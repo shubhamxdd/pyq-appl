@@ -12,7 +12,7 @@ class ResourceOut(ResourceBase):
     user_id: UUID
     file_url: str
     status: str # pending | processing | ready | failed
-    processing_progress: int
+    processing_progress: Optional[int] = 0
     created_at: datetime
     
     model_config = ConfigDict(from_attributes=True)
