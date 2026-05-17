@@ -1,4 +1,4 @@
-import api from './auth';
+import api, { API_URL } from './auth';
 
 export interface ChatSession {
   id: string;
@@ -45,8 +45,7 @@ export const solverApi = {
       headers['Authorization'] = `Bearer ${token}`;
     }
     
-    // Using 127.0.0.1:8001 as the source of truth for local dev
-    return fetch('http://127.0.0.1:8001/api/solver/ask', {
+    return fetch(`${API_URL}/solver/ask`, {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
