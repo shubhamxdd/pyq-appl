@@ -11,7 +11,7 @@ export default function Resources() {
   const [type, setType] = useState('notes');
   const [isUploading, setIsUploading] = useState(false);
 
-  const { data: resources, isLoading } = useQuery({
+  const { data: resources, isLoading, isError } = useQuery({
     queryKey: ['resources'],
     queryFn: resourcesApi.list,
     refetchInterval: (query) => {
@@ -140,14 +140,21 @@ export default function Resources() {
                   <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500" />
                 </td>
               </tr>
-            ) : resources?.length === 0 ? (
+            ) : isError ? (
+              <tr>
+                <td colSpan={5} className="px-6 py-10 text-center text-red-500 dark:text-red-400">
+                  <XCircle className="w-8 h-8 mx-auto mb-2" />
+                  Failed to load resources. Please try refreshing.
+                </td>
+              </tr>
+            ) : !resources || resources.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
                   No resources uploaded yet.
                 </td>
               </tr>
             ) : (
-              resources?.map((res) => (
+              resources.map((res) => (
                 <tr key={res.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{res.filename}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 capitalize">{res.type.replace('_', ' ')}</td>
