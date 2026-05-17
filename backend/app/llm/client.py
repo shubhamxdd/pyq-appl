@@ -8,7 +8,7 @@ class OpenRouterClient:
         self.api_key = settings.OPENROUTER_API_KEY
         self.base_url = "https://openrouter.ai/api/v1/chat/completions"
 
-    async def stream_chat(self, messages: list, model: str = "anthropic/claude-3.5-sonnet") -> AsyncGenerator[str, None]:
+    async def stream_chat(self, messages: list, model: str = "openrouter/owl-alpha") -> AsyncGenerator[str, None]:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
