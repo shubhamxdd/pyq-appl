@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     
     FRONTEND_URL: str = "http://localhost:5173"
     QUESTIONS_LIMIT: int = 30
+    PAPERS_LIMIT: int = 3
+    RESOURCES_LIMIT: int = 3
     class Config:
         env_file = ".env"
 

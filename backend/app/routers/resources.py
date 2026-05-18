@@ -29,6 +29,17 @@ async def upload_resource(
             detail="Only PDF and Text files are supported"
         )
     
+    # Quota check
+    if current_user.plan == "free":
+        from sqlalchemy import func
+        count_result = await db.execute(select(func.count(Resource.id)).where(Resource.user_id == current_user.id))
+        resource_count = count_result.scalar_one()
+        if resource_count >= settings.RESOURCES_LIMIT:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Free plan limit reached ({settings.RESOURCES_LIMIT} resources). Please upgrade to upload more."
+            )
+
     # Chunked read with size enforcement (CodeRabbit fix)
     MAX_BYTES = settings.MAX_FILE_SIZE_MB * 1024 * 1024
     CHUNK_SIZE = 1024 * 1024 # 1MB chunks

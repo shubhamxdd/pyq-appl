@@ -39,12 +39,20 @@
 
 ## In Progress
 
-- VPS Deployment.
+- VPS Deployment (Hetzner, Nginx, SSL).
 
 ## Next Up
 
-1. **Quota Enforcement**: Apply monthly limits to paper generation.
-2. **UI Polish**: Dashboard integration and mobile refinement.
+1. **Nginx & SSL**: Configure reverse proxy and Let's Encrypt for secure HTTPS access.
+2. **Production `.env`**: Finalize secrets and cloud storage paths.
+3. **Smoke Testing**: Run a full end-to-end test on the live server.
+
+## Deferred (Post-Launch)
+
+- Quota Enforcement (Free vs Paid limits, monthly cron reset).
+- Mobile App / PWA Support.
+- Math/LaTeX rendering.
+
 
 
 ## Open Questions

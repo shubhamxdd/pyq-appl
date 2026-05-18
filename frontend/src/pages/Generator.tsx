@@ -129,6 +129,9 @@ export default function Generator() {
       navigate(`/generator/${newPaper.id}`);
       toast.success('Paper generation started!');
     },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.detail || 'Failed to create paper.');
+    }
   });
 
   const toggleSettingsMutation = useMutation({

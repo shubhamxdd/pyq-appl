@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from typing import List
 import uuid
 import json
@@ -28,6 +28,14 @@ from ..services.storage import storage_service
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/papers", tags=["papers"])
+
+@router.post("/detect-format")
+async def detect_format(
+    data: FormatDetectionRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+# ... (skip rest to replace entire top file content correctly, wait, using replace with old_string is safer)
 
 @router.post("/detect-format")
 async def detect_format(
@@ -83,6 +91,16 @@ async def create_paper(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="At least one resource must be selected."
         )
+
+    # 1. Quota Check
+    if current_user.plan == "free":
+        count_result = await db.execute(select(func.count(Paper.id)).where(Paper.user_id == current_user.id))
+        paper_count = count_result.scalar_one()
+        if paper_count >= settings.PAPERS_LIMIT:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Free plan limit reached ({settings.PAPERS_LIMIT} papers). Please upgrade to generate more."
+            )
 
     # 2. Create Paper record
     new_paper = Paper(

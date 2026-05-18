@@ -12,6 +12,8 @@ import { useAuthStore } from './store/authStore';
 
 import { useQuery } from '@tanstack/react-query';
 import api from './api/auth';
+import { resourcesApi } from './api/resources';
+import { papersApi } from './api/papers';
 import { useEffect } from 'react';
 
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -24,7 +26,7 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { LayoutDashboard, Zap, FileText, CheckCircle2 } from "lucide-react"
+import { LayoutDashboard, Zap, FileText, CheckCircle2, FileEdit } from "lucide-react"
 
 const queryClient = new QueryClient();
 
@@ -41,6 +43,16 @@ function Dashboard() {
     },
   });
 
+  const { data: resources } = useQuery({
+    queryKey: ['resources'],
+    queryFn: resourcesApi.list,
+  });
+
+  const { data: papers } = useQuery({
+    queryKey: ['papers'],
+    queryFn: papersApi.list,
+  });
+
   // Sync store when data changes
   useEffect(() => {
     if (user && token) {
@@ -49,6 +61,18 @@ function Dashboard() {
   }, [user, token, setAuth]);
 
   const displayUser = user || storeUser;
+
+  const isPaid = displayUser?.plan === 'paid';
+  const limits = {
+    questions: isPaid ? 'Unlimited' : 30,
+    resources: isPaid ? 'Unlimited' : 3,
+    papers: isPaid ? 'Unlimited' : 2,
+  };
+  
+  const getProgress = (used: number, limit: number | string) => {
+    if (limit === 'Unlimited') return 0;
+    return Math.min((used / (limit as number)) * 100, 100);
+  };
 
   if (isLoading && !storeUser) {
     return (
@@ -75,7 +99,7 @@ function Dashboard() {
 
       <Separator className="bg-border/50" />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Plan Status */}
         <Card className="border-border/50 shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -85,34 +109,84 @@ function Dashboard() {
             <CardDescription className="uppercase tracking-widest text-[10px] font-bold">Account Plan</CardDescription>
             <CardTitle className="text-3xl font-black capitalize flex items-center gap-2">
               {displayUser?.plan}
-              <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-none font-bold">ACTIVE</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">You are currently on the {displayUser?.plan} tier with standard limits.</p>
+            <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 border-none font-bold">ACTIVE</Badge>
           </CardContent>
         </Card>
 
-        {/* Usage Stats */}
-        <Card className="md:col-span-2 border-border/50 shadow-sm relative overflow-hidden group">
+        {/* Questions Answered */}
+        <Card className="border-border/50 shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
             <Zap className="size-12 text-green-500" />
           </div>
           <CardHeader className="pb-2">
-            <CardDescription className="uppercase tracking-widest text-[10px] font-bold">Usage Activity</CardDescription>
-            <CardTitle className="text-3xl font-black text-green-600 dark:text-green-500">
-              {displayUser?.questions_used} <span className="text-sm font-medium text-muted-foreground uppercase tracking-normal">Questions Answered</span>
+            <CardDescription className="uppercase tracking-widest text-[10px] font-bold">Questions</CardDescription>
+            <CardTitle className="text-4xl font-black text-green-600 dark:text-green-500">
+              {displayUser?.questions_used || 0}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-               <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+          <CardContent className="space-y-3">
+            <span className="text-xs font-bold text-muted-foreground uppercase">Answered</span>
+            <div className="space-y-1">
+               <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-green-500 transition-all duration-1000 ease-out" 
-                    style={{ width: `${Math.min((displayUser?.questions_used || 0) / 30 * 100, 100)}%` }}
+                    style={{ width: `${getProgress(displayUser?.questions_used || 0, limits.questions)}%` }}
                   />
                </div>
-               <span className="text-[10px] font-bold text-muted-foreground uppercase whitespace-nowrap">Quota: {displayUser?.questions_used} / 30</span>
+               <p className="text-[10px] font-bold text-muted-foreground uppercase">Quota: {displayUser?.questions_used || 0} / {limits.questions}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Resources Uploaded */}
+        <Card className="border-border/50 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+            <FileText className="size-12 text-blue-500" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardDescription className="uppercase tracking-widest text-[10px] font-bold">Resources</CardDescription>
+            <CardTitle className="text-4xl font-black text-blue-600 dark:text-blue-500">
+              {resources?.length || 0}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <span className="text-xs font-bold text-muted-foreground uppercase">Uploaded</span>
+             <div className="space-y-1">
+               <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 transition-all duration-1000 ease-out" 
+                    style={{ width: `${getProgress(resources?.length || 0, limits.resources)}%` }}
+                  />
+               </div>
+               <p className="text-[10px] font-bold text-muted-foreground uppercase">Quota: {resources?.length || 0} / {limits.resources}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Papers Generated */}
+        <Card className="border-border/50 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+            <FileEdit className="size-12 text-purple-500" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardDescription className="uppercase tracking-widest text-[10px] font-bold">Sample Papers</CardDescription>
+            <CardTitle className="text-4xl font-black text-purple-600 dark:text-purple-500">
+              {papers?.length || 0}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <span className="text-xs font-bold text-muted-foreground uppercase">Generated</span>
+             <div className="space-y-1">
+               <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-purple-500 transition-all duration-1000 ease-out" 
+                    style={{ width: `${getProgress(papers?.length || 0, limits.papers)}%` }}
+                  />
+               </div>
+               <p className="text-[10px] font-bold text-muted-foreground uppercase">Quota: {papers?.length || 0} / {limits.papers}</p>
             </div>
           </CardContent>
         </Card>
