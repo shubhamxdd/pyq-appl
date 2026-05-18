@@ -20,7 +20,10 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  Zap
+  Zap,
+  Trash2,
+  Edit2,
+  Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from "@/components/ui/button"
@@ -67,6 +70,10 @@ export default function Generator() {
     long_marks: 10
   });
   const [activePaperId, setActivePaperId] = useState<string | null>(paperId || null);
+  const [editingPaperId, setEditingPaperId] = useState<string | null>(null);
+  const [newPaperTitle, setNewPaperTitle] = useState('');
+  const [editingPaperId, setEditingPaperId] = useState<string | null>(null);
+  const [newPaperTitle, setNewPaperTitle] = useState('');
 
   // Sync state with URL
   useEffect(() => {
@@ -153,6 +160,41 @@ export default function Generator() {
         toast.error('Failed to generate PDF. Please try again.');
     }
   });
+
+  const renamePaperMutation = useMutation({
+    mutationFn: ({ id, title }: { id: string; title: string }) => papersApi.update(id, { title }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['papers'] });
+      setEditingPaperId(null);
+      toast.success('Paper renamed successfully');
+    },
+    onError: () => {
+      toast.error('Failed to rename paper.');
+    }
+  });
+
+  const deletePaperMutation = useMutation({
+    mutationFn: (id: string) => papersApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['papers'] });
+      setActivePaperId(null);
+      navigate('/generator');
+      toast.success('Paper deleted successfully');
+    },
+    onError: () => {
+      toast.error('Failed to delete paper.');
+    }
+  });
+
+  const startRenamingPaper = (id: string, currentTitle: string) => {
+    setEditingPaperId(id);
+    setNewPaperTitle(currentTitle);
+  };
+
+  const handleRenamePaper = (id: string) => {
+    if (!newPaperTitle.trim()) return;
+    renamePaperMutation.mutate({ id, title: newPaperTitle });
+  };
 
   // --- HANDLERS ---
   const handleResourceToggle = (id: string) => {
@@ -393,7 +435,7 @@ export default function Generator() {
                             onClick={() => handleSelectPaper(paper.id)}
                         >
                             <CardContent className="p-4 flex items-center justify-between">
-                                <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
                                     <div className={cn(
                                         "size-10 rounded-xl flex items-center justify-center shrink-0",
                                         paper.status === 'done' ? "bg-green-500/10 text-green-600" :
@@ -404,14 +446,57 @@ export default function Generator() {
                                          paper.status === 'failed' ? <XCircle className="size-5" /> : 
                                          <Clock className="size-5" />}
                                     </div>
-                                    <div className="min-w-0">
-                                        <h4 className="font-bold text-sm truncate">{paper.title}</h4>
-                                        <p className="text-[10px] text-muted-foreground uppercase font-bold">
-                                            {new Date(paper.created_at).toLocaleDateString()}
-                                        </p>
+                                    <div className="min-w-0 flex-1">
+                                        {editingPaperId === paper.id ? (
+                                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                                <Input 
+                                                    className="h-7 text-xs py-0 px-2"
+                                                    value={newPaperTitle}
+                                                    onChange={(e) => setNewPaperTitle(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') handleRenamePaper(paper.id);
+                                                        if (e.key === 'Escape') setEditingPaperId(null);
+                                                    }}
+                                                    autoFocus
+                                                />
+                                                <Button size="icon" variant="ghost" className="size-6 shrink-0" onClick={() => handleRenamePaper(paper.id)}>
+                                                    <Check className="size-3 text-green-600" />
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <h4 className="font-bold text-sm truncate">{paper.title}</h4>
+                                                <p className="text-[10px] text-muted-foreground uppercase font-bold">
+                                                    {new Date(paper.created_at).toLocaleDateString()}
+                                                </p>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
-                                <ChevronRight className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                
+                                {editingPaperId !== paper.id && (
+                                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="size-7 text-muted-foreground hover:text-primary"
+                                            onClick={() => startRenamingPaper(paper.id, paper.title)}
+                                        >
+                                            <Edit2 className="size-3" />
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="size-7 text-muted-foreground hover:text-destructive"
+                                            onClick={() => { 
+                                                if(window.confirm('Delete this paper?')) deletePaperMutation.mutate(paper.id); 
+                                            }}
+                                        >
+                                            <Trash2 className="size-3" />
+                                        </Button>
+                                    </div>
+                                )}
+                                <ChevronRight className={cn("size-4 text-muted-foreground transition-opacity", editingPaperId === paper.id ? "opacity-0" : "opacity-0 group-hover:opacity-100")} />
                             </CardContent>
                         </Card>
                     ))}
@@ -443,6 +528,21 @@ export default function Generator() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-9 px-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                        onClick={() => {
+                                            if(window.confirm('Delete this paper? This will also abort generation if running.')) {
+                                                deletePaperMutation.mutate(activePaperId);
+                                            }
+                                        }}
+                                        disabled={deletePaperMutation.isPending}
+                                        title={activePaper?.status === 'generating' ? "Abort Generation" : "Delete Paper"}
+                                    >
+                                        {deletePaperMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                                    </Button>
+
                                     {/* Full Version (Study Guide) */}
                                     {activeOutput?.pdf_url ? (
                                         <div className="flex gap-2">

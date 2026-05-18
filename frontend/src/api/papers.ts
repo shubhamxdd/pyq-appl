@@ -21,8 +21,18 @@ export const papersApi = {
     return response.data;
   },
   
+  update: async (id: string, data: { title: string }) => {
+    const response = await api.patch(`/papers/${id}`, data);
+    return response.data;
+  },
+  
   detectFormat: async (resourceId: string) => {
     const response = await api.post('/papers/detect-format', { resource_id: resourceId });
+    return response.data;
+  },
+  
+  delete: async (id: string) => {
+    const response = await api.delete(`/papers/${id}`);
     return response.data;
   },
   

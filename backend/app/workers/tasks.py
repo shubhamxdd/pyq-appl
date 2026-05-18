@@ -307,6 +307,22 @@ async def generate_paper_task(ctx, paper_id: str, job_id: str = None):
                 chunk_count += 1
                 if chunk_count % 50 == 0:
                     print(f"📥 [LLM] Received {chunk_count} chunks...")
+                    # Robust Cancellation Check
+                    async with SessionLocal() as check_db:
+                        check_res = await check_db.execute(select(Paper).where(Paper.id == paper_id))
+                        p_check = check_res.scalar_one_or_none()
+                        if not p_check or p_check.status not in ["pending", "generating"]:
+                            print(f"🛑 [STOPPED] Paper {paper_id} deleted or aborted. Cancelling generation.")
+                            if job_id:
+                                async with SessionLocal() as job_db:
+                                    j_res = await job_db.execute(select(Job).where(Job.id == job_id))
+                                    j = j_res.scalar_one_or_none()
+                                    if j:
+                                        j.status = "done"
+                                        from datetime import datetime
+                                        j.completed_at = datetime.utcnow()
+                                        await job_db.commit()
+                            return
 
             print(f"✅ [LLM] Response complete ({len(full_response)} chars).")
 

@@ -192,6 +192,61 @@ async def get_paper(
         raise HTTPException(status_code=404, detail="Paper not found")
     return paper
 
+@router.patch("/{paper_id}", response_model=PaperOut)
+async def update_paper(
+    paper_id: uuid.UUID,
+    data: PaperUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(
+        select(Paper).where(Paper.id == paper_id, Paper.user_id == current_user.id)
+    )
+    paper = result.scalar_one_or_none()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+        
+    if data.title:
+        paper.title = data.title
+        
+    await db.commit()
+    await db.refresh(paper)
+    return paper
+
+@router.delete("/{paper_id}")
+async def delete_paper(
+    paper_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(
+        select(Paper).where(Paper.id == paper_id, Paper.user_id == current_user.id)
+    )
+    paper = result.scalar_one_or_none()
+    
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+        
+    # Check if there are outputs with PDFs to clean up storage
+    output_result = await db.execute(
+        select(PaperOutput).where(PaperOutput.paper_id == paper_id)
+    )
+    output = output_result.scalar_one_or_none()
+    
+    if output:
+        if output.pdf_url:
+            object_name = output.pdf_url.replace(f"{settings.SPACES_PUBLIC_URL}/", "")
+            storage_service.delete_file(object_name)
+        if output.question_pdf_url:
+            object_name = output.question_pdf_url.replace(f"{settings.SPACES_PUBLIC_URL}/", "")
+            storage_service.delete_file(object_name)
+            
+    # Deleting the paper will cascade and delete PaperOutput and paper_resources automatically
+    await db.delete(paper)
+    await db.commit()
+    
+    return {"message": "Paper deleted successfully"}
+
 @router.get("/{paper_id}/output", response_model=PaperOutputOut)
 async def get_paper_output(
     paper_id: uuid.UUID,
