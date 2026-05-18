@@ -119,12 +119,23 @@ async def create_paper(
     await db.commit()
     await db.refresh(new_paper)
     
+    from ..models.job import Job
+    new_job = Job(
+        user_id=current_user.id,
+        job_type="generate_paper",
+        status="queued",
+        ref_id=new_paper.id
+    )
+    db.add(new_job)
+    await db.flush()
+    
     # 4. Enqueue background task
     redis = await create_pool(RedisSettings.from_dsn(settings.REDIS_URL))
     try:
-        job = await redis.enqueue_job("generate_paper_task", str(new_paper.id))
+        job = await redis.enqueue_job("generate_paper_task", str(new_paper.id), str(new_job.id))
         if job is None:
             raise RuntimeError("Failed to enqueue generate_paper_task")
+        await db.commit()
     except Exception as e:
         logger.error(f"Redis enqueue error: {e}")
         new_paper.status = "failed"

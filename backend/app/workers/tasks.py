@@ -16,17 +16,29 @@ from PIL import Image
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def extraction_task(ctx, resource_id: str):
+async def extraction_task(ctx, resource_id: str, job_id: str = None):
     print(f"\n🚀 [TASK START] Resource ID: {resource_id}")
     
     async with SessionLocal() as db:
         try:
+            if job_id:
+                from ..models.job import Job
+                job_res = await db.execute(select(Job).where(Job.id == job_id))
+                job = job_res.scalar_one_or_none()
+                if job:
+                    job.status = "running"
+                    await db.commit()
+
             # 1. Fetch Resource
             result = await db.execute(select(Resource).where(Resource.id == resource_id))
             resource = result.scalar_one_or_none()
             
             if not resource:
                 print(f"❌ [DB ERROR] Resource {resource_id} not found.")
+                if job_id:
+                    job.status = "failed"
+                    job.error = "Resource not found"
+                    await db.commit()
                 return
             
             print(f"📄 [PROCESSING] Filename: {resource.filename} | Type: {resource.type}")
@@ -34,6 +46,9 @@ async def extraction_task(ctx, resource_id: str):
             # 2. Check for initial cancellation
             if resource.status != "processing":
                 print(f"⚠️ [ABORTED] Task aborted before starting (Status: {resource.status})")
+                if job_id:
+                    job.status = "done"
+                    await db.commit()
                 return
 
             # 3. Handle PDF Files
@@ -67,6 +82,13 @@ async def extraction_task(ctx, resource_id: str):
                         db_res = check_res.scalar_one_or_none()
                         if not db_res or db_res.status != "processing":
                             print(f"🛑 [STOPPED] Cancellation detected at Page {i+1}. Aborting loop.")
+                            if job_id:
+                                async with SessionLocal() as job_db:
+                                    j_res = await job_db.execute(select(Job).where(Job.id == job_id))
+                                    j = j_res.scalar_one_or_none()
+                                    if j:
+                                        j.status = "done"
+                                        await job_db.commit()
                             return
                         
                         # Update Progress %
@@ -128,10 +150,23 @@ async def extraction_task(ctx, resource_id: str):
                     db_res_final = f_res.scalar_one_or_none()
                     if not db_res_final or db_res_final.status != "processing":
                         print("🛑 [ABORTED] Final commit skipped. User stopped task during last page.")
+                        if job_id:
+                            async with SessionLocal() as job_db:
+                                j_res = await job_db.execute(select(Job).where(Job.id == job_id))
+                                j = j_res.scalar_one_or_none()
+                                if j:
+                                    j.status = "done"
+                                    await job_db.commit()
                         return
 
                 resource.extracted_text = "\n\n".join(full_text)
                 resource.status = "ready"
+                
+                if job_id:
+                    job.status = "done"
+                    from datetime import datetime
+                    job.completed_at = datetime.utcnow()
+                    
                 print(f"💾 [STEP 3/3] Saving extracted text to DB...")
                 await db.commit()
                 print(f"🏁 [TASK COMPLETE] Resource {resource_id} is now READY.\n")
@@ -142,11 +177,23 @@ async def extraction_task(ctx, resource_id: str):
                     response = await client.get(resource.file_url)
                     resource.extracted_text = response.text
                     resource.status = "ready"
+                    
+                if job_id:
+                    job.status = "done"
+                    from datetime import datetime
+                    job.completed_at = datetime.utcnow()
+                    
                 await db.commit()
                 print("🏁 [TASK COMPLETE] Text file is READY.\n")
             
             else:
                 resource.status = "failed"
+                if job_id:
+                    job.status = "failed"
+                    job.error = f"Unsupported file type: {resource.filename}"
+                    from datetime import datetime
+                    job.completed_at = datetime.utcnow()
+                    
                 print(f"❌ [ERROR] Unsupported file type: {resource.filename}")
                 await db.commit()
 
@@ -162,12 +209,23 @@ async def extraction_task(ctx, resource_id: str):
                     res_to_fail = update_result.scalar_one_or_none()
                     if res_to_fail and res_to_fail.status == "processing":
                         res_to_fail.status = "failed"
-                        await err_db.commit()
-                        print(f"📉 [DB] Resource {resource_id} marked as FAILED.")
+                    
+                    if job_id:
+                        from ..models.job import Job
+                        j_res = await err_db.execute(select(Job).where(Job.id == job_id))
+                        j = j_res.scalar_one_or_none()
+                        if j:
+                            j.status = "failed"
+                            j.error = str(e)
+                            from datetime import datetime
+                            j.completed_at = datetime.utcnow()
+                            
+                    await err_db.commit()
+                    print(f"📉 [DB] Resource {resource_id} marked as FAILED.")
             except Exception as final_err:
                 print(f"💀 [FATAL] Could not even mark as failed: {final_err}")
 
-async def generate_paper_task(ctx, paper_id: str):
+async def generate_paper_task(ctx, paper_id: str, job_id: str = None):
     import json
     from sqlalchemy.orm import selectinload
     from ..models.paper import Paper
@@ -179,6 +237,14 @@ async def generate_paper_task(ctx, paper_id: str):
     
     async with SessionLocal() as db:
         try:
+            if job_id:
+                from ..models.job import Job
+                job_res = await db.execute(select(Job).where(Job.id == job_id))
+                job = job_res.scalar_one_or_none()
+                if job:
+                    job.status = "running"
+                    await db.commit()
+
             # 1. Fetch Paper with Resources
             print(f"📡 [DEBUG] Fetching paper metadata and linked resources...")
             result = await db.execute(
@@ -190,6 +256,10 @@ async def generate_paper_task(ctx, paper_id: str):
             
             if not paper:
                 print(f"❌ [DB ERROR] Paper {paper_id} not found")
+                if job_id:
+                    job.status = "failed"
+                    job.error = "Paper not found"
+                    await db.commit()
                 return
 
             print(f"📝 [DEBUG] Paper Title: {paper.title}")
@@ -271,6 +341,11 @@ async def generate_paper_task(ctx, paper_id: str):
             paper_to_done = res_upd.scalar_one()
             paper_to_done.status = "done"
             
+            if job_id:
+                job.status = "done"
+                from datetime import datetime
+                job.completed_at = datetime.utcnow()
+                
             await db.commit()
             print(f"🏁 [TASK COMPLETE] Paper {paper_id} is READY.\n")
 
@@ -283,7 +358,18 @@ async def generate_paper_task(ctx, paper_id: str):
                     paper_to_fail = res_upd.scalar_one_or_none()
                     if paper_to_fail:
                         paper_to_fail.status = "failed"
-                        await err_db.commit()
-                        print(f"📉 [DB] Paper {paper_id} marked as FAILED.")
+                    
+                    if job_id:
+                        from ..models.job import Job
+                        j_res = await err_db.execute(select(Job).where(Job.id == job_id))
+                        j = j_res.scalar_one_or_none()
+                        if j:
+                            j.status = "failed"
+                            j.error = str(e)
+                            from datetime import datetime
+                            j.completed_at = datetime.utcnow()
+                            
+                    await err_db.commit()
+                    print(f"📉 [DB] Paper {paper_id} marked as FAILED.")
             except:
                 pass

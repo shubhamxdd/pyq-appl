@@ -26,12 +26,16 @@
     - SSE (Server-Sent Events) backend routing.
     - Real-time chat interface with markdown rendering.
     - Multi-resource context selection.
+    - URL-based session routing.
 - **Phase 5: Sample Paper Generator**:
     - **Backend**: Pydantic schemas, `papers` router, and full background generation logic.
     - **Worker**: `generate_paper_task` with detailed debug logging and error handling.
     - **Frontend**: Interactive Generator dashboard with multi-resource selection.
-    - **Format Detection**: AI-powered extraction of exam patterns from past papers.
-    - **Toggle Logic**: Seamless UI for hiding/showing answers and AI explanations.
+    - **Format Detection**: AI-powered extraction of exam patterns, editable via UI.
+    - **PDF Export**: Dual export modes (Study Guide & Question Paper) via WeasyPrint + Jinja2.
+    - **Persistent Links**: Generated PDFs are securely stored and directly accessible.
+    - **URL Routing**: Unique URLs for each generated paper.
+    - **Task Logging**: Comprehensive background job tracking in the `jobs` database table.
 
 ## In Progress
 
@@ -39,9 +43,9 @@
 
 ## Next Up
 
-1. **PDF Export**: Implement WeasyPrint + Jinja2 for professional paper downloads.
-2. **Quota Enforcement**: Apply monthly limits to paper generation.
-3. **UI Polish**: Dashboard integration and mobile refinement.
+1. **Quota Enforcement**: Apply monthly limits to paper generation.
+2. **UI Polish**: Dashboard integration and mobile refinement.
+
 
 ## Open Questions
 
