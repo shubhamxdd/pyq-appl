@@ -2,10 +2,41 @@ import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { resourcesApi } from '../api/resources';
 import { solverApi, type ChatMessage } from '../api/solver';
-import { Send, Zap, BookOpen, User, Bot, Loader2, ExternalLink, Plus, MessageSquare, Trash2, History, Edit2 } from 'lucide-react';
+import {
+  Send,
+  Zap,
+  BookOpen,
+  User as UserIcon,
+  Bot,
+  Loader2,
+  ExternalLink,
+  Plus,
+  MessageSquare,
+  Trash2,
+  History,
+  Edit2,
+  PanelRight,
+  FileText,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'react-hot-toast';
-import { clsx } from 'clsx';
+import { cn } from '@/lib/utils';
+import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 
 export default function Solver() {
   const queryClient = useQueryClient();
@@ -16,6 +47,8 @@ export default function Solver() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [newSessionTitle, setNewSessionTitle] = useState('');
+  const [showContext, setShowContext] = useState(true);
+  const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // --- QUERIES ---
@@ -44,6 +77,7 @@ export default function Solver() {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       setActiveSessionId(newSession.id);
       setMessages([]);
+      toast.success('New session created');
     },
   });
 
@@ -167,39 +201,47 @@ export default function Solver() {
     renameSessionMutation.mutate({ id, title: newSessionTitle });
   };
 
-  return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
-      {/* Sidebar: Chat History */}
-      <div className="w-72 flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-          <button
-            onClick={() => createSessionMutation.mutate()}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-semibold transition-colors shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            New Session
-          </button>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto p-3 space-y-1">
-          <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-widest">
-            <History className="w-4 h-4" />
-            Recent Chats
+  // Shared Components
+  const HistoryContent = () => (
+    <div className="flex flex-col h-full bg-background md:bg-transparent">
+      <div className="p-4 border-b">
+        <Button
+          onClick={() => {
+            if(!createSessionMutation.isPending) createSessionMutation.mutate();
+          }}
+          disabled={createSessionMutation.isPending}
+          className="w-full rounded-xl shadow-sm h-11"
+          variant="default"
+        >
+          <Plus className="size-4 mr-2" />
+          New Session
+        </Button>
+      </div>
+      
+      <ScrollArea className="flex-1">
+        <div className="p-3 space-y-1">
+          <div className="px-3 py-2 text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+            <History className="size-3" />
+            Recent Conversations
           </div>
           {sessionsLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
+            <div className="space-y-2 p-3">
+              {[1, 2, 3].map(i => <div key={i} className="h-10 bg-muted/40 animate-pulse rounded-lg" />)}
+            </div>
           ) : sessions?.length === 0 ? (
-            <p className="text-center py-8 text-sm text-gray-400 italic">No history yet.</p>
+            <div className="py-12 text-center space-y-2 px-6">
+              <MessageSquare className="size-8 mx-auto opacity-10" />
+              <p className="text-xs text-muted-foreground">Your chat history will appear here.</p>
+            </div>
           ) : (
             sessions?.map(sess => (
               <div key={sess.id} className="group relative">
                 {editingSessionId === sess.id ? (
-                  <div className="flex items-center gap-2 px-3 py-2">
-                    <input
-                      type="text"
+                  <div className="px-2 py-1">
+                    <Input
                       value={newSessionTitle}
                       onChange={(e) => setNewSessionTitle(e.target.value)}
-                      className="bg-white dark:bg-gray-700 border border-blue-500 rounded px-2 py-1 text-xs w-full focus:outline-none dark:text-white"
+                      className="h-9 text-xs focus-visible:ring-primary rounded-lg pr-8"
                       autoFocus
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleRenameSession(sess.id);
@@ -208,181 +250,411 @@ export default function Solver() {
                     />
                   </div>
                 ) : (
-                  <>
-                    <button
-                      onClick={() => setActiveSessionId(sess.id)}
-                      className={clsx(
-                        "w-full text-left px-3 py-3 rounded-lg text-sm transition-all flex items-start gap-3",
-                        activeSessionId === sess.id
-                          ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                          : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                      )}
+                  <button
+                    onClick={() => setActiveSessionId(sess.id)}
+                    className={cn(
+                      "w-full text-left px-3 py-3 rounded-xl text-sm transition-all flex items-center gap-3",
+                      activeSessionId === sess.id
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    )}
+                  >
+                    <MessageSquare className={cn("size-4 flex-shrink-0", activeSessionId === sess.id ? "opacity-100" : "opacity-40")} />
+                    <span className="truncate pr-8">{sess.title}</span>
+                  </button>
+                )}
+                
+                {editingSessionId !== sess.id && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="size-7 text-muted-foreground hover:text-primary"
+                      onClick={() => startRenamingSession(sess.id, sess.title)}
                     >
-                      <MessageSquare className="w-4 h-4 mt-0.5 flex-shrink-0 opacity-70" />
-                      <span className="truncate pr-12">{sess.title}</span>
-                    </button>
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => startRenamingSession(sess.id, sess.title)}
-                        className="p-1.5 text-gray-400 hover:text-blue-500"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); if(window.confirm('Delete chat?')) deleteSessionMutation.mutate(sess.id); }}
-                        className="p-1.5 text-gray-400 hover:text-red-500"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </>
+                      <Edit2 className="size-3" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="size-7 text-muted-foreground hover:text-destructive"
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        if(window.confirm('Delete this conversation?')) deleteSessionMutation.mutate(sess.id); 
+                      }}
+                    >
+                      <Trash2 className="size-3" />
+                    </Button>
+                  </div>
                 )}
               </div>
             ))
           )}
         </div>
-      </div>
+      </ScrollArea>
+    </div>
+  )
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Chat Header / Config */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between shadow-sm z-10">
-          <div className="flex items-center gap-3">
-            <Zap className="w-6 h-6 text-blue-600" />
-            <h2 className="font-bold text-gray-900 dark:text-white truncate max-w-md">
-              {activeSessionId ? sessions?.find(s => s.id === activeSessionId)?.title : 'New Chat Session'}
+  const ContextContent = () => (
+    <div className="flex flex-col h-full bg-background md:bg-transparent">
+      <div className="p-4 border-b flex items-center justify-between">
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+          <BookOpen className="size-3.5" />
+          Document Library
+        </h3>
+        <Badge variant="outline" className="text-[10px] h-5">
+          {readyResources.length} Ready
+        </Badge>
+      </div>
+      
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-3">
+          {readyResources.length === 0 ? (
+            <div className="py-12 text-center space-y-3 px-6 text-muted-foreground">
+              <FileText className="size-10 mx-auto opacity-10" />
+              <p className="text-xs italic">Upload documents to begin.</p>
+            </div>
+          ) : (
+            readyResources.map(res => (
+              <div key={res.id} className="relative group">
+                <button
+                  onClick={() => toggleResource(res.id)}
+                  className={cn(
+                    "w-full text-left p-4 rounded-2xl text-xs transition-all border-2 relative overflow-hidden group/item",
+                    selectedResources.includes(res.id)
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-muted bg-background hover:bg-muted/5 shadow-none"
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "p-2 rounded-lg transition-colors",
+                      selectedResources.includes(res.id) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover/item:bg-muted-foreground/10"
+                    )}>
+                       <FileText className="size-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold truncate text-[13px]">{res.filename}</p>
+                      <p className="mt-1 text-[10px] uppercase font-mono opacity-50">{res.type}</p>
+                    </div>
+                  </div>
+                </button>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  asChild
+                  className="absolute right-2 top-2 size-7 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <a href={res.file_url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="size-3.5" />
+                  </a>
+                </Button>
+              </div>
+            ))
+          )}
+        </div>
+      </ScrollArea>
+      
+      <div className="p-4 border-t hidden md:block">
+         <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
+            <p className="text-[10px] leading-relaxed text-muted-foreground">
+               <span className="font-bold text-primary mr-1">Tip:</span>
+               Combine multiple sources for better answers.
+            </p>
+         </div>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="flex h-[calc(100vh-6rem)] md:h-[calc(100vh-8rem)] gap-4 animate-in fade-in duration-500 relative">
+      {/* --- DESKTOP HISTORY SIDEBAR --- */}
+      <aside className={cn(
+        "hidden md:flex flex-col border rounded-2xl bg-muted overflow-hidden shadow-sm transition-all duration-300",
+        isHistoryCollapsed ? "w-16" : "w-72"
+      )}>
+
+        {isHistoryCollapsed ? (
+          <div className="flex flex-col items-center py-4 gap-4">
+             <Button variant="ghost" size="icon" onClick={() => setIsHistoryCollapsed(false)}>
+                <PanelLeftOpen className="size-5" />
+             </Button>
+             <Button variant="default" size="icon" className="rounded-xl shadow-md" onClick={() => createSessionMutation.mutate()}>
+                <Plus className="size-5" />
+             </Button>
+             <Separator />
+             <History className="size-4 text-muted-foreground opacity-50" />
+          </div>
+        ) : (
+          <div className="relative h-full flex flex-col">
+             <div className="p-4 border-b flex items-center gap-2">
+                <Button
+                  onClick={() => createSessionMutation.mutate()}
+                  className="flex-1 rounded-xl shadow-sm h-10"
+                  variant="default"
+                >
+                  <Plus className="size-4 mr-2" />
+                  New Session
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="size-10 hover:bg-muted shrink-0"
+                  onClick={() => setIsHistoryCollapsed(true)}
+                >
+                  <PanelLeftClose className="size-4" />
+                </Button>
+             </div>
+             <div className="flex-1 overflow-hidden">
+                <ScrollArea className="h-full">
+                  <div className="p-3 space-y-1">
+                    <div className="px-3 py-2 text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                      <History className="size-3" />
+                      Recent Conversations
+                    </div>
+                    {sessionsLoading ? (
+                      <div className="space-y-2 p-3">
+                        {[1, 2, 3].map(i => <div key={i} className="h-10 bg-muted/40 animate-pulse rounded-lg" />)}
+                      </div>
+                    ) : sessions?.length === 0 ? (
+                      <div className="py-12 text-center space-y-2 px-6">
+                        <MessageSquare className="size-8 mx-auto opacity-10" />
+                        <p className="text-xs text-muted-foreground">Your chat history will appear here.</p>
+                      </div>
+                    ) : (
+                      sessions?.map(sess => (
+                        <div key={sess.id} className="group relative">
+                          {editingSessionId === sess.id ? (
+                            <div className="px-2 py-1">
+                              <Input
+                                value={newSessionTitle}
+                                onChange={(e) => setNewSessionTitle(e.target.value)}
+                                className="h-9 text-xs focus-visible:ring-primary rounded-lg pr-8"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleRenameSession(sess.id);
+                                  if (e.key === 'Escape') setEditingSessionId(null);
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setActiveSessionId(sess.id)}
+                              className={cn(
+                                "w-full text-left px-3 py-3 rounded-xl text-sm transition-all flex items-center gap-3",
+                                activeSessionId === sess.id
+                                  ? "bg-primary/10 text-primary font-semibold"
+                                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                              )}
+                            >
+                              <MessageSquare className={cn("size-4 flex-shrink-0", activeSessionId === sess.id ? "opacity-100" : "opacity-40")} />
+                              <span className="truncate pr-8">{sess.title}</span>
+                            </button>
+                          )}
+                          
+                          {editingSessionId !== sess.id && (
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="size-7 text-muted-foreground hover:text-primary"
+                                onClick={() => startRenamingSession(sess.id, sess.title)}
+                              >
+                                <Edit2 className="size-3" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="size-7 text-muted-foreground hover:text-destructive"
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  if(window.confirm('Delete this conversation?')) deleteSessionMutation.mutate(sess.id); 
+                                }}
+                              >
+                                <Trash2 className="size-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+             </div>
+          </div>
+        )}
+      </aside>
+
+      {/* --- MAIN CHAT AREA --- */}
+      <div className="flex-1 flex flex-col min-w-0 bg-card border rounded-2xl overflow-hidden shadow-sm relative">
+        {/* Chat Header */}
+        <div className="h-14 md:h-16 border-b flex items-center justify-between px-4 md:px-6 bg-card sticky top-0 z-10">
+          <div className="flex items-center gap-2 md:gap-4 min-w-0">
+            {/* Mobile History Trigger */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden shrink-0">
+                  <Menu className="size-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-80">
+                <SheetHeader className="p-4 border-b">
+                   <SheetTitle>Chat History</SheetTitle>
+                </SheetHeader>
+                <HistoryContent />
+              </SheetContent>
+            </Sheet>
+
+            <div className="bg-primary/10 p-2 rounded-lg hidden xs:flex">
+              <Zap className="size-4 md:size-5 text-primary" />
+            </div>
+            <h2 className="font-bold text-sm md:text-lg truncate">
+              {activeSessionId ? sessions?.find(s => s.id === activeSessionId)?.title : 'New Chat'}
             </h2>
           </div>
           
-          <div className="flex items-center gap-2">
-            <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 flex items-center gap-2">
-              <BookOpen className="w-3.5 h-3.5" />
-              {selectedResources.length} Sources Selected
-            </div>
+          <div className="flex items-center gap-1 md:gap-2">
+            <Badge variant="secondary" className="rounded-lg px-2 md:px-3 py-1 bg-muted/50 font-medium text-[10px] md:text-xs">
+              <BookOpen className="size-3 mr-1 md:mr-2 opacity-60 hidden xs:inline" />
+              {selectedResources.length} Sources
+            </Badge>
+            
+            {/* Desktop Context Toggle */}
+            <Button variant="ghost" size="icon" className="hidden md:flex" onClick={() => setShowContext(!showContext)}>
+               <PanelRight className={cn("size-5 transition-colors", showContext ? "text-primary" : "text-muted-foreground")} />
+            </Button>
+
+            {/* Mobile Context Trigger */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden shrink-0">
+                  <BookOpen className="size-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="p-0 w-80">
+                <SheetHeader className="p-4 border-b">
+                   <SheetTitle>Resources</SheetTitle>
+                </SheetHeader>
+                <ContextContent />
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
 
-        <div className="flex-1 flex overflow-hidden">
-          {/* Chat Messages */}
-          <div className="flex-1 flex flex-col relative">
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-8 scroll-smooth">
-              {activeSessionId && historyLoading ? (
-                 <div className="h-full flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-500 opacity-20" /></div>
-              ) : messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-6">
-                  <div className="relative">
-                    <Zap className="w-16 h-12 opacity-10 text-blue-600 animate-pulse" />
-                    <Bot className="w-12 h-12 absolute -top-4 -right-4 opacity-20" />
-                  </div>
-                  <div className="text-center space-y-2">
-                    <p className="text-lg font-medium text-gray-500">How can I help you today?</p>
-                    <p className="text-sm opacity-60">Pick your resources on the right and ask away.</p>
+        {/* Message List */}
+        <div 
+          ref={scrollRef} 
+          className="flex-1 overflow-y-auto"
+        >
+          <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6 md:space-y-8 pb-38 md:pb-38">
+            {activeSessionId && historyLoading ? (
+               <div className="flex flex-col items-center justify-center h-[40vh] gap-4">
+                  <Loader2 className="size-8 animate-spin text-primary opacity-20" />
+                  <p className="text-sm text-muted-foreground animate-pulse">Retrieving conversation...</p>
+               </div>
+            ) : messages.length === 0 ? (
+              <div className="h-[50vh] flex flex-col items-center justify-center text-center space-y-6 max-w-sm mx-auto">
+                <div className="size-16 md:size-20 bg-primary/5 rounded-3xl flex items-center justify-center relative">
+                  <Zap className="size-8 md:size-10 text-primary/30 animate-pulse" />
+                  <Bot className="size-6 md:size-8 absolute -top-2 -right-2 text-primary opacity-20" />
+                </div>
+                <div className="space-y-2 px-4">
+                  <h3 className="text-lg md:text-xl font-bold tracking-tight">Ready to start?</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
+                    Select your study materials and ask any question to begin.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              messages.map((msg, i) => (
+                <div key={i} className={cn(
+                  "flex gap-3 md:gap-6 animate-in slide-in-from-bottom-2 duration-300",
+                  msg.role === 'user' ? "flex-row-reverse" : "flex-row"
+                )}>
+                  <Avatar className={cn(
+                    "size-8 md:size-10 border shadow-sm shrink-0",
+                    msg.role === 'user' ? "border-primary/20" : "border-muted"
+                  )}>
+                    {msg.role === 'user' ? (
+                      <>
+                        <AvatarImage src="" />
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          <UserIcon className="size-4 md:size-5" />
+                        </AvatarFallback>
+                      </>
+                    ) : (
+                      <>
+                        <AvatarImage src="" />
+                        <AvatarFallback className="bg-muted text-foreground">
+                          <Bot className="size-4 md:size-5" />
+                        </AvatarFallback>
+                      </>
+                    )}
+                  </Avatar>
+
+                  <div className={cn(
+                    "max-w-[90%] md:max-w-[85%] rounded-2xl px-4 py-3 md:px-6 md:py-4 shadow-sm text-sm md:text-[15px]",
+                    msg.role === 'user' 
+                      ? "bg-primary text-primary-foreground rounded-tr-none" 
+                      : "bg-muted/30 border border-border/50 text-foreground rounded-tl-none prose dark:prose-invert prose-blue max-w-none"
+                  )}>
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    {msg.role === 'assistant' && !msg.content && isStreaming && (
+                       <div className="flex gap-1.5 mt-2 h-4 items-center">
+                          <span className="size-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                          <span className="size-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                          <span className="size-1.5 bg-primary/40 rounded-full animate-bounce"></span>
+                       </div>
+                    )}
                   </div>
                 </div>
-              ) : (
-                messages.map((msg, i) => (
-                  <div key={i} className={clsx("flex gap-6", msg.role === 'user' ? "flex-row-reverse" : "flex-row")}>
-                    <div className={clsx(
-                      "w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm",
-                      msg.role === 'user' ? "bg-blue-600 text-white" : "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-blue-600 dark:text-blue-400"
-                    )}>
-                      {msg.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
-                    </div>
-                    <div className={clsx(
-                      "max-w-[85%] p-5 rounded-2xl text-[15px] leading-relaxed shadow-sm",
-                      msg.role === 'user' 
-                        ? "bg-blue-600 text-white rounded-tr-none" 
-                        : "bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-tl-none prose dark:prose-invert prose-blue max-w-3xl"
-                    )}>
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                      {msg.role === 'assistant' && !msg.content && isStreaming && (
-                         <div className="flex gap-1 mt-2">
-                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                            <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></span>
-                         </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Input Area */}
-            <div className="p-6 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
-              <form onSubmit={handleAsk} className="max-w-4xl mx-auto relative group">
-                <textarea
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleAsk(e);
-                    }
-                  }}
-                  placeholder="Ask anything about your documents..."
-                  className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-2xl px-5 py-4 pr-14 text-[15px] focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 resize-none dark:text-white transition-all shadow-inner"
-                  rows={2}
-                />
-                <button
-                  type="submit"
-                  disabled={isStreaming || !question.trim() || selectedResources.length === 0}
-                  className="absolute right-3.5 bottom-3.5 p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-30 disabled:grayscale transition-all shadow-md active:scale-95"
-                >
-                  {isStreaming ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                </button>
-              </form>
-              <div className="mt-3 flex items-center justify-center gap-6 opacity-40 hover:opacity-100 transition-opacity">
-                 <p className="text-[9px] uppercase tracking-[0.2em] font-bold dark:text-white">Powered by OWL-ALPHA AI</p>
-                 <p className="text-[9px] uppercase tracking-[0.2em] font-bold dark:text-white">Grounding Mode: ACTIVE</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Sidebar: Context Selector */}
-          <div className="w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden shadow-sm">
-             <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
-                <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                  <BookOpen className="w-3.5 h-3.5" />
-                  Context Library
-                </h3>
-             </div>
-             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                {readyResources.length === 0 ? (
-                  <div className="text-center py-10 px-4 space-y-2">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-300" />
-                    <p className="text-[11px] text-gray-400 italic leading-tight">Waiting for resources to be "Ready" status...</p>
-                  </div>
-                ) : (
-                  readyResources.map(res => (
-                    <div key={res.id} className="relative group">
-                      <button
-                        onClick={() => toggleResource(res.id)}
-                        className={clsx(
-                          "w-full text-left p-3 rounded-xl text-xs transition-all border leading-normal pr-8",
-                          selectedResources.includes(res.id)
-                            ? "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/40 dark:border-blue-800 dark:text-blue-300 shadow-sm"
-                            : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500"
-                        )}
-                      >
-                        <p className="font-bold truncate">{res.filename}</p>
-                        <p className="mt-0.5 opacity-50 text-[10px] uppercase font-mono">{res.type}</p>
-                      </button>
-                      <a
-                        href={res.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    </div>
-                  ))
-                )}
-             </div>
+              ))
+            )}
           </div>
         </div>
+
+        {/* Input Area */}
+        <div className="absolute bottom-0 left-0 right-0 p-3 md:p-6 bg-gradient-to-t from-background via-background to-transparent z-10">
+          <form onSubmit={handleAsk} className="max-w-3xl mx-auto">
+            <div className="relative group shadow-2xl rounded-2xl bg-background border-2 border-muted overflow-hidden transition-all focus-within:border-primary">
+              <textarea
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAsk(e);
+                  }
+                }}
+                placeholder="Ask your tutor..."
+                className="w-full bg-transparent px-4 py-3 md:px-6 md:py-4 pr-14 text-sm md:text-[15px] focus:outline-none resize-none min-h-[56px] md:min-h-[64px] max-h-[200px]"
+                rows={1}
+              />
+              <Button
+                type="submit"
+                disabled={isStreaming || !question.trim() || selectedResources.length === 0}
+                className="absolute right-2 bottom-2 md:right-3 md:bottom-3 size-9 md:size-10 rounded-xl shadow-lg transition-transform active:scale-90"
+              >
+                {isStreaming ? <Loader2 className="size-4 md:size-5 animate-spin" /> : <Send className="size-4 md:size-5" />}
+              </Button>
+            </div>
+            <div className="mt-2 flex items-center justify-center gap-3 opacity-30 select-none hidden xs:flex">
+               <p className="text-[8px] md:text-[9px] uppercase tracking-widest font-black">Model: OWL-ALPHA</p>
+               <Separator orientation="vertical" className="h-2" />
+               <p className="text-[8px] md:text-[9px] uppercase tracking-widest font-black">Grounding Engine</p>
+            </div>
+          </form>
+        </div>
       </div>
+
+      {/* --- DESKTOP RIGHT SIDEBAR: CONTEXT LIBRARY --- */}
+      {showContext && (
+        <aside className="hidden md:flex w-80 flex-col border rounded-2xl bg-muted overflow-hidden shadow-sm animate-in slide-in-from-right duration-300">
+           <ContextContent />
+        </aside>
+      )}
+
     </div>
   );
 }
