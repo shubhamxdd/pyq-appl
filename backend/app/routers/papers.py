@@ -22,6 +22,8 @@ from ..llm.prompts import DETECT_FORMAT_PROMPT
 from ..config import settings
 from arq import create_pool
 from arq.connections import RedisSettings
+from ..services.pdf import generate_paper_pdf
+from ..services.storage import storage_service
 
 logger = logging.getLogger(__name__)
 
@@ -211,3 +213,54 @@ async def toggle_output_settings(
     await db.commit()
     await db.refresh(output)
     return output
+
+@router.get("/{paper_id}/pdf")
+async def get_paper_pdf_url(
+    paper_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # 1. Fetch paper and output
+    result = await db.execute(
+        select(Paper).where(Paper.id == paper_id, Paper.user_id == current_user.id)
+    )
+    paper = result.scalar_one_or_none()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+
+    output_result = await db.execute(
+        select(PaperOutput).where(PaperOutput.paper_id == paper_id)
+    )
+    output = output_result.scalar_one_or_none()
+    if not output:
+        raise HTTPException(status_code=404, detail="Paper output not yet generated")
+
+    # 2. Check if PDF already exists
+    if output.pdf_url:
+        return {"url": output.pdf_url}
+
+    # 3. Generate PDF
+    try:
+        pdf_file = await generate_paper_pdf(
+            title=paper.title,
+            questions=output.questions,
+            format_config=paper.format_config,
+            include_answers=output.include_answers,
+            include_explanations=output.include_explanations
+        )
+    except Exception as e:
+        logger.error(f"PDF Generation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
+
+    # 4. Upload to Spaces
+    object_name = f"papers/{paper_id}_{uuid.uuid4().hex[:8]}.pdf"
+    pdf_url = storage_service.upload_file(pdf_file.getvalue(), object_name)
+    
+    if not pdf_url:
+        raise HTTPException(status_code=500, detail="Failed to upload PDF to storage")
+
+    # 5. Save URL to DB
+    output.pdf_url = pdf_url
+    await db.commit()
+
+    return {"url": pdf_url}

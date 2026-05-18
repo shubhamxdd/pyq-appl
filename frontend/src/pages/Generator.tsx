@@ -117,6 +117,19 @@ export default function Generator() {
     }
   });
 
+  const exportPdfMutation = useMutation({
+    mutationFn: (id: string) => papersApi.getPdf(id),
+    onSuccess: (data) => {
+        if (data.url) {
+            window.open(data.url, '_blank');
+            toast.success('PDF generated successfully!');
+        }
+    },
+    onError: () => {
+        toast.error('Failed to generate PDF. Please try again.');
+    }
+  });
+
   // --- HANDLERS ---
   const handleResourceToggle = (id: string) => {
     setSelectedResources(prev => {
@@ -406,10 +419,40 @@ export default function Generator() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Button size="sm" variant="outline" className="gap-2 h-9 shadow-sm" disabled>
-                                        <Download className="size-4" />
-                                        PDF Export
-                                    </Button>
+                                    {activeOutput?.pdf_url ? (
+                                        <div className="flex gap-2">
+                                            <Button 
+                                                size="sm" 
+                                                variant="outline" 
+                                                className="gap-2 h-9 shadow-sm bg-green-500/5 hover:bg-green-500/10 text-green-600 border-green-500/20" 
+                                                onClick={() => window.open(activeOutput.pdf_url, '_blank')}
+                                            >
+                                                <Download className="size-4" />
+                                                View Generated PDF
+                                            </Button>
+                                            <Button 
+                                                size="sm" 
+                                                variant="ghost" 
+                                                className="h-9 px-2 text-muted-foreground hover:text-foreground"
+                                                onClick={() => exportPdfMutation.mutate(activePaperId)}
+                                                disabled={exportPdfMutation.isPending}
+                                                title="Re-generate with current settings"
+                                            >
+                                                {exportPdfMutation.isPending ? <Loader2 className="size-3 animate-spin" /> : <Settings2 className="size-3" />}
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline" 
+                                            className="gap-2 h-9 shadow-sm" 
+                                            onClick={() => activePaperId && exportPdfMutation.mutate(activePaperId)}
+                                            disabled={exportPdfMutation.isPending || activePaper?.status !== 'done'}
+                                        >
+                                            {exportPdfMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+                                            {exportPdfMutation.isPending ? "Generating..." : "PDF Export"}
+                                        </Button>
+                                    )}
                                 </div>
                             </CardHeader>
                             <CardContent className="pt-6">
