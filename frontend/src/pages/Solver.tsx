@@ -552,7 +552,7 @@ export default function Solver() {
           ref={scrollRef} 
           className="flex-1 overflow-y-auto"
         >
-          <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6 md:space-y-8 pb-32">
+          <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6 md:space-y-8 pb-38 md:pb-38">
             {activeSessionId && historyLoading ? (
                <div className="flex flex-col items-center justify-center h-[40vh] gap-4">
                   <Loader2 className="size-8 animate-spin text-primary opacity-20" />
