@@ -13,6 +13,9 @@ import { useQuery } from '@tanstack/react-query';
 import api from './api/auth';
 import { useEffect } from 'react';
 
+import { SidebarProvider } from "@/components/ui/sidebar"
+import { TooltipProvider } from "@/components/ui/tooltip"
+
 const queryClient = new QueryClient();
 
 function Dashboard() {
@@ -68,49 +71,53 @@ function Dashboard() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Toaster position="top-right" reverseOrder={false} />
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
-          {/* Protected Routes with Layout */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/resources"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Resources />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/solver"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Solver />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
+      <TooltipProvider>
+        <SidebarProvider>
+          <Toaster position="top-right" reverseOrder={false} />
+          <Router>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              
+              {/* Protected Routes with Layout */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/resources"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Resources />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/solver"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Solver />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
 
-          {/* Fallbacks */}
-          <Route path="/generator" element={<Navigate to="/" replace />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
+              {/* Fallbacks */}
+              <Route path="/generator" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Router>
+        </SidebarProvider>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }
