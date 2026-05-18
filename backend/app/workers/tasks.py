@@ -166,3 +166,124 @@ async def extraction_task(ctx, resource_id: str):
                         print(f"📉 [DB] Resource {resource_id} marked as FAILED.")
             except Exception as final_err:
                 print(f"💀 [FATAL] Could not even mark as failed: {final_err}")
+
+async def generate_paper_task(ctx, paper_id: str):
+    import json
+    from sqlalchemy.orm import selectinload
+    from ..models.paper import Paper
+    from ..models.paper_output import PaperOutput
+    from ..llm.client import open_router_client
+    from ..llm.prompts import GENERATE_PAPER_PROMPT
+
+    print(f"\n🚀 [TASK START] Paper Generation: {paper_id}")
+    
+    async with SessionLocal() as db:
+        try:
+            # 1. Fetch Paper with Resources
+            print(f"📡 [DEBUG] Fetching paper metadata and linked resources...")
+            result = await db.execute(
+                select(Paper)
+                .where(Paper.id == paper_id)
+                .options(selectinload(Paper.resources))
+            )
+            paper = result.scalar_one_or_none()
+            
+            if not paper:
+                print(f"❌ [DB ERROR] Paper {paper_id} not found")
+                return
+
+            print(f"📝 [DEBUG] Paper Title: {paper.title}")
+            print(f"⚙️ [DEBUG] Format Config: {paper.format_config}")
+
+            paper.status = "generating"
+            await db.commit()
+            print(f"🔄 [STATUS] Set to 'generating'")
+
+            # 2. Combine Context
+            print(f"📚 [DEBUG] Aggregating context from {len(paper.resources)} resources...")
+            combined_context = ""
+            for res in paper.resources:
+                if res.extracted_text:
+                    content_len = len(res.extracted_text)
+                    print(f"📎 [DEBUG] Adding resource: {res.filename} ({content_len} chars)")
+                    combined_context += f"--- Source ({res.type}): {res.filename} ---\n{res.extracted_text}\n\n"
+                else:
+                    print(f"⚠️ [DEBUG] Resource {res.filename} has no extracted text. Skipping.")
+
+            if not combined_context:
+                raise Exception("No context found in selected resources.")
+
+            context_total_len = len(combined_context)
+            print(f"📊 [DEBUG] Total Context Length: {context_total_len} characters")
+
+            # 3. Call LLM
+            print(f"🤖 [LLM] Preparing prompt and calling OpenRouter...")
+            prompt = GENERATE_PAPER_PROMPT.format(
+                format_config=json.dumps(paper.format_config),
+                context_chunks=combined_context
+            )
+            
+            messages = [
+                {"role": "system", "content": "You are a professional exam paper generator."},
+                {"role": "user", "content": prompt}
+            ]
+
+            full_response = ""
+            chunk_count = 0
+            print(f"⏳ [LLM] Streaming response (this may take 30-90s)...")
+            
+            async for chunk in open_router_client.stream_chat(messages):
+                full_response += chunk
+                chunk_count += 1
+                if chunk_count % 50 == 0:
+                    print(f"📥 [LLM] Received {chunk_count} chunks...")
+
+            print(f"✅ [LLM] Response complete ({len(full_response)} chars).")
+
+            # 4. Parse JSON
+            print(f"📦 [DEBUG] Cleaning and parsing JSON response...")
+            clean_json = full_response.strip()
+            if clean_json.startswith("```json"):
+                clean_json = clean_json[7:]
+            if clean_json.endswith("```"):
+                clean_json = clean_json[:-3]
+            
+            try:
+                questions = json.loads(clean_json)
+                print(f"✨ [DEBUG] Successfully parsed {len(questions)} questions.")
+            except json.JSONDecodeError as je:
+                print(f"❌ [PARSE ERROR] Failed to parse LLM response as JSON.")
+                print(f"🔍 [DEBUG] Raw response snippet: {clean_json[:500]}...")
+                raise je
+
+            # 5. Save Output
+            print(f"💾 [DEBUG] Saving paper output to database...")
+            new_output = PaperOutput(
+                paper_id=paper.id,
+                questions=questions,
+                include_answers=True,
+                include_explanations=True
+            )
+            db.add(new_output)
+            
+            # Re-fetch to update status
+            res_upd = await db.execute(select(Paper).where(Paper.id == paper_id))
+            paper_to_done = res_upd.scalar_one()
+            paper_to_done.status = "done"
+            
+            await db.commit()
+            print(f"🏁 [TASK COMPLETE] Paper {paper_id} is READY.\n")
+
+        except Exception as e:
+            print(f"💥 [ERROR] Paper Generation Failed: {str(e)}")
+            traceback.print_exc()
+            try:
+                async with SessionLocal() as err_db:
+                    res_upd = await err_db.execute(select(Paper).where(Paper.id == paper_id))
+                    paper_to_fail = res_upd.scalar_one_or_none()
+                    if paper_to_fail:
+                        paper_to_fail.status = "failed"
+                        await err_db.commit()
+                        print(f"📉 [DB] Paper {paper_id} marked as FAILED.")
+            except:
+                pass

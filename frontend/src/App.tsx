@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Resources from './pages/Resources';
 import Solver from './pages/Solver';
+import Generator from './pages/Generator';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import { useAuthStore } from './store/authStore';
@@ -183,9 +184,18 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/generator"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Generator />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Fallbacks */}
-            <Route path="/generator" element={<Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>

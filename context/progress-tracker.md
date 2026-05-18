@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Phase 4: PYQ Solver (Ready for Review)
+- Phase 5: Sample Paper Generator (Core Complete)
 
 ## Current Goal
 
-- Implement AI-powered question answering with document context and streaming.
+- Deploy current functional version to VPS and then implement final Phase 5 features.
 
 ## Completed
 
@@ -26,16 +26,22 @@
     - SSE (Server-Sent Events) backend routing.
     - Real-time chat interface with markdown rendering.
     - Multi-resource context selection.
+- **Phase 5: Sample Paper Generator**:
+    - **Backend**: Pydantic schemas, `papers` router, and full background generation logic.
+    - **Worker**: `generate_paper_task` with detailed debug logging and error handling.
+    - **Frontend**: Interactive Generator dashboard with multi-resource selection.
+    - **Format Detection**: AI-powered extraction of exam patterns from past papers.
+    - **Toggle Logic**: Seamless UI for hiding/showing answers and AI explanations.
 
 ## In Progress
 
-- Verification and testing of the end-to-end Solver flow.
+- VPS Deployment.
 
 ## Next Up
 
-1. **Phase 5: Sample Paper Generator**:
-    - Automatic format detection.
-    - JSON paper generation.
+1. **PDF Export**: Implement WeasyPrint + Jinja2 for professional paper downloads.
+2. **Quota Enforcement**: Apply monthly limits to paper generation.
+3. **UI Polish**: Dashboard integration and mobile refinement.
 
 ## Open Questions
 
@@ -48,5 +54,5 @@
 
 ## Session Notes
 
-- Phase 4 implemented on `feature/pyq-solver`.
-- Users can now select resources and ask questions in real-time.
+- Phase 5 Core generation logic is working but slow (approx 4 mins for large papers).
+- Deployment prioritized to ensure end-to-end functionality on live server.

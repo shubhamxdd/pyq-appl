@@ -1,0 +1,521 @@
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { resourcesApi } from '../api/resources';
+import { papersApi } from '../api/papers';
+import {
+  FileEdit,
+  Plus,
+  Loader2,
+  Settings2,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ChevronRight,
+  ChevronDown,
+  BookOpen,
+  FileText,
+  Brain,
+  Download,
+  Eye,
+  EyeOff,
+  AlertCircle
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Checkbox } from "@/components/ui/checkbox"
+import { toast } from 'react-hot-toast';
+
+export default function Generator() {
+  const queryClient = useQueryClient();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [selectedResources, setSelectedResources] = useState<{id: string, role: string}[]>([]);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [formatConfig, setFormatConfig] = useState<any>(null);
+  const [activePaperId, setActivePaperId] = useState<string | null>(null);
+
+  // --- QUERIES ---
+  const { data: resources } = useQuery({
+    queryKey: ['resources'],
+    queryFn: resourcesApi.list,
+  });
+
+  const { data: papers, isLoading: papersLoading } = useQuery({
+    queryKey: ['papers'],
+    queryFn: papersApi.list,
+    refetchInterval: (query) => {
+        return query.state.data?.some((p: any) => p.status === 'pending' || p.status === 'generating') ? 3000 : false;
+    }
+  });
+
+  const { data: activeOutput, isLoading: outputLoading } = useQuery({
+    queryKey: ['paper-output', activePaperId],
+    queryFn: () => activePaperId ? papersApi.getOutput(activePaperId) : Promise.resolve(null),
+    enabled: !!activePaperId,
+  });
+
+  const readyResources = resources?.filter(r => r.status === 'ready') || [];
+
+  // --- MUTATIONS ---
+  const detectFormatMutation = useMutation({
+    mutationFn: (resourceId: string) => papersApi.detectFormat(resourceId),
+    onSuccess: (data) => {
+      setFormatConfig(data);
+      toast.success('Format detected successfully!');
+    },
+    onSettled: () => setIsDetecting(false),
+  });
+
+  const createPaperMutation = useMutation({
+    mutationFn: (data: any) => papersApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['papers'] });
+      setIsCreateOpen(false);
+      setTitle('');
+      setSelectedResources([]);
+      setFormatConfig(null);
+      toast.success('Paper generation started!');
+    },
+  });
+
+  const toggleSettingsMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: any }) => papersApi.toggleOutput(id, data),
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['paper-output', activePaperId] });
+    }
+  });
+
+  // --- HANDLERS ---
+  const handleResourceToggle = (id: string) => {
+    setSelectedResources(prev => {
+      const exists = prev.find(r => r.id === id);
+      if (exists) return prev.filter(r => r.id !== id);
+      return [...prev, { id, role: 'notes' }];
+    });
+  };
+
+  const handleRoleChange = (id: string, role: string) => {
+    setSelectedResources(prev => prev.map(r => r.id === id ? { ...r, role } : r));
+  };
+
+  const handleDetectFormat = (id: string) => {
+    setIsDetecting(true);
+    detectFormatMutation.mutate(id);
+  };
+
+  const handleCreatePaper = () => {
+    if (!title || selectedResources.length === 0 || !formatConfig) {
+      toast.error('Please fill in all fields and detect a format.');
+      return;
+    }
+    createPaperMutation.mutate({
+      title,
+      resources: selectedResources.map(r => ({ resource_id: r.id, role: r.role })),
+      format_config: formatConfig,
+    });
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
+            <FileEdit className="size-9 text-primary" />
+            Paper Generator
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Generate custom exam papers from your study materials.
+          </p>
+        </div>
+
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogTrigger asChild>
+            <Button size="lg" className="shadow-lg hover:shadow-primary/20 transition-all gap-2">
+              <Plus className="size-5" />
+              Generate New Paper
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+            <DialogHeader className="p-6 pb-2">
+              <DialogTitle className="text-2xl font-bold">New Sample Paper</DialogTitle>
+              <DialogDescription>
+                Select your materials and define the exam pattern.
+              </DialogDescription>
+            </DialogHeader>
+
+            <ScrollArea className="flex-1 px-6">
+              <div className="space-y-6 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title" className="text-base font-semibold">Paper Title</Label>
+                  <Input 
+                    id="title" 
+                    placeholder="e.g., Biology Midterm Prep 2024" 
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-semibold">Step 1: Select Materials</Label>
+                    <Badge variant="secondary">{selectedResources.length} Selected</Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-2">
+                    {readyResources.map(res => (
+                      <div 
+                        key={res.id} 
+                        className={cn(
+                          "flex items-center justify-between p-3 rounded-lg border transition-all",
+                          selectedResources.find(r => r.id === res.id) 
+                            ? "border-primary bg-primary/5 shadow-sm" 
+                            : "border-border hover:border-primary/50"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Checkbox 
+                            id={`res-${res.id}`} 
+                            checked={!!selectedResources.find(r => r.id === res.id)}
+                            onCheckedChange={() => handleResourceToggle(res.id)}
+                          />
+                          <div className="grid gap-0.5">
+                            <Label htmlFor={`res-${res.id}`} className="font-medium cursor-pointer">
+                              {res.filename}
+                            </Label>
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
+                              {res.type}
+                            </span>
+                          </div>
+                        </div>
+
+                        {selectedResources.find(r => r.id === res.id) && (
+                          <div className="flex items-center gap-2">
+                            <select 
+                              className="text-xs bg-transparent border-none focus:ring-0 font-semibold text-primary cursor-pointer"
+                              value={selectedResources.find(r => r.id === res.id)?.role}
+                              onChange={(e) => handleRoleChange(res.id, e.target.value)}
+                            >
+                              <option value="notes">Notes</option>
+                              <option value="syllabus">Syllabus</option>
+                              <option value="past_paper">Past Paper</option>
+                            </select>
+                            {res.type === 'past_paper' && (
+                                <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="h-7 text-[10px] gap-1 px-2"
+                                    onClick={() => handleDetectFormat(res.id)}
+                                    disabled={isDetecting}
+                                >
+                                    {isDetecting ? <Loader2 className="size-3 animate-spin" /> : <Brain className="size-3" />}
+                                    Detect Pattern
+                                </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {readyResources.length === 0 && (
+                        <div className="text-center py-6 bg-muted/20 rounded-xl border border-dashed">
+                            <p className="text-sm text-muted-foreground">No ready resources found. Upload some first.</p>
+                        </div>
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-semibold">Step 2: Exam Pattern</Label>
+                    {formatConfig && <Badge className="bg-green-500">READY</Badge>}
+                  </div>
+
+                  {formatConfig ? (
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-muted/30 p-3 rounded-lg border text-center">
+                        <span className="block text-2xl font-bold">{formatConfig.mcq || 0}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold">MCQs</span>
+                      </div>
+                      <div className="bg-muted/30 p-3 rounded-lg border text-center">
+                        <span className="block text-2xl font-bold">{formatConfig.short || 0}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Short Qs</span>
+                      </div>
+                      <div className="bg-muted/30 p-3 rounded-lg border text-center">
+                        <span className="block text-2xl font-bold">{formatConfig.long || 0}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Long Qs</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-8 border border-dashed rounded-xl flex flex-col items-center justify-center text-center gap-2 bg-muted/10">
+                      <Settings2 className="size-8 text-muted-foreground/50" />
+                      <p className="text-sm text-muted-foreground">Select a "Past Paper" above and click "Detect Pattern" to auto-fill this.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </ScrollArea>
+
+            <DialogFooter className="p-6 pt-2 border-t bg-muted/20">
+              <Button variant="ghost" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+              <Button 
+                onClick={handleCreatePaper} 
+                disabled={!title || selectedResources.length === 0 || !formatConfig || createPaperMutation.isPending}
+                className="gap-2"
+              >
+                {createPaperMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Brain className="size-4" />}
+                Generate Paper
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Paper List Sidebar */}
+        <div className="lg:col-span-4 space-y-4">
+            <h3 className="font-bold text-sm uppercase tracking-widest text-muted-foreground px-2">Recent Generations</h3>
+            <ScrollArea className="h-[60vh] pr-4">
+                <div className="space-y-3">
+                    {papersLoading && <div className="flex justify-center p-8"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>}
+                    {papers?.map((paper: any) => (
+                        <Card 
+                            key={paper.id} 
+                            className={cn(
+                                "cursor-pointer transition-all hover:border-primary/50 group",
+                                activePaperId === paper.id ? "border-primary bg-primary/5" : "border-border/50"
+                            )}
+                            onClick={() => setActivePaperId(paper.id)}
+                        >
+                            <CardContent className="p-4 flex items-center justify-between">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className={cn(
+                                        "size-10 rounded-xl flex items-center justify-center shrink-0",
+                                        paper.status === 'done' ? "bg-green-500/10 text-green-600" :
+                                        paper.status === 'failed' ? "bg-destructive/10 text-destructive" :
+                                        "bg-primary/10 text-primary animate-pulse"
+                                    )}>
+                                        {paper.status === 'done' ? <CheckCircle2 className="size-5" /> : 
+                                         paper.status === 'failed' ? <XCircle className="size-5" /> : 
+                                         <Clock className="size-5" />}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h4 className="font-bold text-sm truncate">{paper.title}</h4>
+                                        <p className="text-[10px] text-muted-foreground uppercase font-bold">
+                                            {new Date(paper.created_at).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                </div>
+                                <ChevronRight className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                    {!papersLoading && papers?.length === 0 && (
+                        <div className="text-center py-12 border-2 border-dashed rounded-2xl bg-muted/10">
+                            <p className="text-sm text-muted-foreground">No papers generated yet.</p>
+                        </div>
+                    )}
+                </div>
+            </ScrollArea>
+        </div>
+
+        {/* Paper Content Area */}
+        <div className="lg:col-span-8">
+            {activePaperId ? (
+                <div className="space-y-6">
+                    {/* Header Card */}
+                    {papers?.find((p: any) => p.id === activePaperId) && (
+                        <Card className="border-border/50 shadow-sm overflow-hidden">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-muted/20 pb-4">
+                                <div className="space-y-1">
+                                    <CardTitle className="text-2xl font-bold">{papers.find((p: any) => p.id === activePaperId).title}</CardTitle>
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                            <Badge variant="outline" className="text-[10px] uppercase font-bold">
+                                                {papers.find((p: any) => p.id === activePaperId).status}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button size="sm" variant="outline" className="gap-2 h-9 shadow-sm" disabled>
+                                        <Download className="size-4" />
+                                        PDF Export
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="pt-6">
+                                <div className="flex items-center gap-6">
+                                    <div className="flex items-center gap-2">
+                                        <Label htmlFor="ans-toggle" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Answers</Label>
+                                        <Button 
+                                            id="ans-toggle"
+                                            size="sm" 
+                                            variant={activeOutput?.include_answers ? "default" : "outline"} 
+                                            className="h-8 px-2 gap-1.5"
+                                            onClick={() => toggleSettingsMutation.mutate({
+                                                id: activePaperId,
+                                                data: { include_answers: !activeOutput?.include_answers }
+                                            })}
+                                        >
+                                            {activeOutput?.include_answers ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+                                            {activeOutput?.include_answers ? "Visible" : "Hidden"}
+                                        </Button>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Label htmlFor="exp-toggle" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Explanations</Label>
+                                        <Button 
+                                            id="exp-toggle"
+                                            size="sm" 
+                                            variant={activeOutput?.include_explanations ? "default" : "outline"} 
+                                            className="h-8 px-2 gap-1.5"
+                                            onClick={() => toggleSettingsMutation.mutate({
+                                                id: activePaperId,
+                                                data: { include_explanations: !activeOutput?.include_explanations }
+                                            })}
+                                        >
+                                            {activeOutput?.include_explanations ? <Brain className="size-3.5" /> : <EyeOff className="size-3.5" />}
+                                            {activeOutput?.include_explanations ? "Visible" : "Hidden"}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Question List */}
+                    <div className="space-y-4">
+                        {outputLoading && (
+                            <div className="flex flex-col items-center justify-center p-20 gap-4">
+                                <Loader2 className="size-10 animate-spin text-primary" />
+                                <p className="text-muted-foreground font-medium animate-pulse">Retrieving your custom paper...</p>
+                            </div>
+                        )}
+
+                        {!outputLoading && activeOutput?.questions?.map((q: any, idx: number) => (
+                            <Card key={idx} className="border-border/50 shadow-sm hover:border-primary/30 transition-colors group">
+                                <CardHeader className="pb-3 flex flex-row items-start justify-between">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-bold">
+                                                QUESTION {idx + 1}
+                                            </Badge>
+                                            <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider">
+                                                {q.type} • {q.marks} MARKS
+                                            </Badge>
+                                        </div>
+                                        <CardTitle className="text-lg leading-relaxed pt-2">{q.question_text}</CardTitle>
+                                    </div>
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Badge className="bg-muted text-muted-foreground hover:bg-muted border-none font-bold text-[10px]">
+                                            {q.topic}
+                                        </Badge>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {q.type === 'mcq' && q.options && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                                            {q.options.map((opt: string, i: number) => (
+                                                <div 
+                                                    key={i} 
+                                                    className={cn(
+                                                        "p-3 rounded-lg border text-sm transition-all",
+                                                        activeOutput.include_answers && opt === q.answer 
+                                                            ? "bg-green-500/10 border-green-500/50 text-green-700 dark:text-green-400 font-bold" 
+                                                            : "bg-muted/30 border-border/50"
+                                                    )}
+                                                >
+                                                    {opt}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {activeOutput.include_answers && q.type !== 'mcq' && (
+                                        <div className="bg-green-500/5 border border-green-500/20 rounded-xl p-4 space-y-2 animate-in slide-in-from-top-2 duration-300">
+                                            <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                                                <CheckCircle2 className="size-4" />
+                                                <span className="text-xs font-bold uppercase tracking-wider">Model Answer</span>
+                                            </div>
+                                            <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                                                {q.answer}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {activeOutput.include_explanations && q.explanation && (
+                                        <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 space-y-2 animate-in slide-in-from-top-2 duration-300">
+                                            <div className="flex items-center gap-2 text-primary">
+                                                <Brain className="size-4" />
+                                                <span className="text-xs font-bold uppercase tracking-wider">AI Explanation</span>
+                                            </div>
+                                            <p className="text-sm text-foreground/90 leading-relaxed italic">
+                                                {q.explanation}
+                                            </p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        ))}
+
+                        {!outputLoading && !activeOutput && (
+                             <div className="flex flex-col items-center justify-center p-20 gap-4 border-2 border-dashed rounded-3xl bg-muted/5">
+                                <div className="size-16 bg-muted rounded-full flex items-center justify-center">
+                                    <Clock className="size-8 text-muted-foreground/50" />
+                                </div>
+                                <div className="text-center">
+                                    <h3 className="text-lg font-bold">Paper is Generating</h3>
+                                    <p className="text-sm text-muted-foreground">Our AI is crafting your exam based on your materials. This usually takes 30-60 seconds.</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ) : (
+                <div className="flex flex-col items-center justify-center h-[60vh] border-2 border-dashed rounded-3xl bg-muted/5 p-10 text-center space-y-6">
+                    <div className="size-20 bg-primary/10 rounded-full flex items-center justify-center shadow-inner">
+                        <FileEdit className="size-10 text-primary" />
+                    </div>
+                    <div className="max-w-md space-y-2">
+                        <h2 className="text-2xl font-bold">Ready to Practice?</h2>
+                        <p className="text-muted-foreground">Select a generated paper from the sidebar or click the button above to create a brand new one from your materials.</p>
+                    </div>
+                    <Button 
+                        variant="outline" 
+                        size="lg" 
+                        className="rounded-full px-8 border-primary/30 hover:bg-primary/5 hover:border-primary transition-all"
+                        onClick={() => setIsCreateOpen(true)}
+                    >
+                        Start Your First Generation
+                    </Button>
+                </div>
+            )}
+        </div>
+      </div>
+    </div>
+  );
+}
