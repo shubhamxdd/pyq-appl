@@ -154,17 +154,26 @@ export default function Generator() {
     }
   });
 
-  const exportPdfMutation = useMutation({
-    mutationFn: ({ id, mode }: { id: string, mode?: string }) => papersApi.getPdf(id, mode),
+  const exportFullPdfMutation = useMutation({
+    mutationFn: (id: string) => papersApi.getPdf(id, 'full'),
     onSuccess: (data) => {
         if (data.url) {
             window.open(data.url, '_blank');
-            toast.success('PDF generated successfully!');
+            toast.success('Study Guide generated!');
         }
     },
-    onError: () => {
-        toast.error('Failed to generate PDF. Please try again.');
-    }
+    onError: () => toast.error('Failed to generate Study Guide.')
+  });
+
+  const exportQuestionsPdfMutation = useMutation({
+    mutationFn: (id: string) => papersApi.getPdf(id, 'questions_only'),
+    onSuccess: (data) => {
+        if (data.url) {
+            window.open(data.url, '_blank');
+            toast.success('Question Paper generated!');
+        }
+    },
+    onError: () => toast.error('Failed to generate Question Paper.')
   });
 
   const renamePaperMutation = useMutation({
@@ -247,7 +256,7 @@ export default function Generator() {
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
+          <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3 text-foreground">
             <FileEdit className="size-9 text-primary" />
             Paper Generator
           </h1>
@@ -446,7 +455,7 @@ export default function Generator() {
                         <Card 
                             key={paper.id} 
                             className={cn(
-                                "cursor-pointer transition-all hover:border-primary/50 group",
+                                "cursor-pointer transition-all hover:border-primary/50 group relative",
                                 activePaperId === paper.id ? "border-primary bg-primary/5" : "border-border/50"
                             )}
                             onClick={() => handleSelectPaper(paper.id)}
@@ -482,7 +491,7 @@ export default function Generator() {
                                             </div>
                                         ) : (
                                             <>
-                                                <h4 className="font-bold text-sm truncate">{paper.title}</h4>
+                                                <h4 className="font-bold text-sm truncate text-foreground">{paper.title}</h4>
                                                 <p className="text-[10px] text-muted-foreground uppercase font-bold">
                                                     {new Date(paper.created_at).toLocaleDateString()}
                                                 </p>
@@ -492,7 +501,7 @@ export default function Generator() {
                                 </div>
                                 
                                 {editingPaperId !== paper.id && (
-                                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
@@ -531,15 +540,15 @@ export default function Generator() {
             {activePaperId ? (
                 <div className="space-y-6">
                     {/* Header Card */}
-                    {papers?.find((p: any) => p.id === activePaperId) && (
-                        <Card className="border-border/50 shadow-sm overflow-hidden">
+                    {activePaper && (
+                        <Card className="border-border/50 shadow-sm overflow-hidden bg-card text-card-foreground">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-muted/20 pb-4">
                                 <div className="space-y-1">
-                                    <CardTitle className="text-2xl font-bold">{papers.find((p: any) => p.id === activePaperId).title}</CardTitle>
+                                    <CardTitle className="text-2xl font-bold">{activePaper.title}</CardTitle>
                                     <div className="flex items-center gap-4">
                                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                             <Badge variant="outline" className="text-[10px] uppercase font-bold">
-                                                {papers.find((p: any) => p.id === activePaperId).status}
+                                                {activePaper.status}
                                             </Badge>
                                         </div>
                                     </div>
@@ -576,11 +585,11 @@ export default function Generator() {
                                                 size="sm" 
                                                 variant="ghost" 
                                                 className="h-9 px-2 text-muted-foreground hover:text-foreground"
-                                                onClick={() => exportPdfMutation.mutate({ id: activePaperId!, mode: 'full' })}
-                                                disabled={exportPdfMutation.isPending}
+                                                onClick={() => exportFullPdfMutation.mutate(activePaperId!)}
+                                                disabled={exportFullPdfMutation.isPending}
                                                 title="Re-generate Study Guide"
                                             >
-                                                {exportPdfMutation.isPending ? <Loader2 className="size-3 animate-spin" /> : <Settings2 className="size-3" />}
+                                                {exportFullPdfMutation.isPending ? <Loader2 className="size-3 animate-spin" /> : <Settings2 className="size-3" />}
                                             </Button>
                                         </div>
                                     ) : (
@@ -588,10 +597,10 @@ export default function Generator() {
                                             size="sm" 
                                             variant="outline" 
                                             className="gap-2 h-9 shadow-sm" 
-                                            onClick={() => activePaperId && exportPdfMutation.mutate({ id: activePaperId, mode: 'full' })}
-                                            disabled={exportPdfMutation.isPending || activePaper?.status !== 'done'}
+                                            onClick={() => activePaperId && exportFullPdfMutation.mutate(activePaperId)}
+                                            disabled={exportFullPdfMutation.isPending || activePaper?.status !== 'done'}
                                         >
-                                            {exportPdfMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+                                            {exportFullPdfMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
                                             Export Study Guide
                                         </Button>
                                     )}
@@ -612,10 +621,10 @@ export default function Generator() {
                                             size="sm" 
                                             variant="outline" 
                                             className="gap-2 h-9 shadow-sm" 
-                                            onClick={() => activePaperId && exportPdfMutation.mutate({ id: activePaperId, mode: 'questions_only' })}
-                                            disabled={exportPdfMutation.isPending || activePaper?.status !== 'done'}
+                                            onClick={() => activePaperId && exportQuestionsPdfMutation.mutate(activePaperId)}
+                                            disabled={exportQuestionsPdfMutation.isPending || activePaper?.status !== 'done'}
                                         >
-                                            {exportPdfMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <FileText className="size-4" />}
+                                            {exportQuestionsPdfMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <FileText className="size-4" />}
                                             Export Questions
                                         </Button>
                                     )}
@@ -670,7 +679,7 @@ export default function Generator() {
                         )}
 
                         {!outputLoading && activeOutput?.questions?.map((q: any, idx: number) => (
-                            <Card key={idx} className="border-border/50 shadow-sm hover:border-primary/30 transition-colors group">
+                            <Card key={idx} className="border-border/50 shadow-sm hover:border-primary/30 transition-colors group bg-card text-card-foreground">
                                 <CardHeader className="pb-3 flex flex-row items-start justify-between">
                                     <div className="space-y-1">
                                         <div className="flex items-center gap-2">
