@@ -14,7 +14,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {/* Page title or breadcrumbs could go here */}
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>
       </SidebarInset>

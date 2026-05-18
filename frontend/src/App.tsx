@@ -62,7 +62,7 @@ function Dashboard() {
   }
 
   return (
-    <div className="container max-w-5xl py-10 space-y-8 animate-in fade-in duration-500">
+    <div className="max-w-5xl space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-2">
         <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
           <LayoutDashboard className="size-9 text-primary" />

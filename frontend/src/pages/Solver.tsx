@@ -18,7 +18,8 @@ import {
   Check,
   X,
   MoreVertical,
-  PanelRight
+  PanelRight,
+  FileText
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'react-hot-toast';
@@ -198,9 +199,9 @@ export default function Solver() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-background overflow-hidden animate-in fade-in duration-500">
+    <div className="flex h-[calc(100vh-4rem)] bg-background overflow-hidden animate-in fade-in duration-500 p-4 gap-4">
       {/* --- LEFT SIDEBAR: SESSION HISTORY --- */}
-      <aside className="w-72 flex flex-col border-r bg-muted/20">
+      <aside className="w-72 flex flex-col border rounded-2xl bg-muted/20 overflow-hidden shadow-sm">
         <div className="p-4 border-b bg-background/50">
           <Button
             onClick={() => createSessionMutation.mutate()}

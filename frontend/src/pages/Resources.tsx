@@ -181,7 +181,7 @@ export default function Resources() {
   };
 
   return (
-    <div className="container max-w-6xl py-8 space-y-8 animate-in fade-in duration-500">
+    <div className="max-w-6xl space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
           <FileText className="size-8 text-primary" />
