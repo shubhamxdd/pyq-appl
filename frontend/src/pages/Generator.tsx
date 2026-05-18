@@ -18,7 +18,8 @@ import {
   Download,
   Eye,
   EyeOff,
-  AlertCircle
+  AlertCircle,
+  Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from "@/components/ui/button"
@@ -53,7 +54,14 @@ export default function Generator() {
   const [title, setTitle] = useState('');
   const [selectedResources, setSelectedResources] = useState<{id: string, role: string}[]>([]);
   const [isDetecting, setIsDetecting] = useState(false);
-  const [formatConfig, setFormatConfig] = useState<any>(null);
+  const [formatConfig, setFormatConfig] = useState<any>({
+    mcq: 0,
+    short: 0,
+    long: 0,
+    mcq_marks: 1,
+    short_marks: 5,
+    long_marks: 10
+  });
   const [activePaperId, setActivePaperId] = useState<string | null>(null);
 
   // --- QUERIES ---
@@ -254,30 +262,64 @@ export default function Generator() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label className="text-base font-semibold">Step 2: Exam Pattern</Label>
-                    {formatConfig && <Badge className="bg-green-500">READY</Badge>}
+                    <div className="flex gap-2">
+                       {isDetecting && <Badge variant="secondary" className="animate-pulse">Analyzing...</Badge>}
+                       <Badge variant="outline" className="text-[10px] uppercase font-bold opacity-60">Editable</Badge>
+                    </div>
                   </div>
 
-                  {formatConfig ? (
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="bg-muted/30 p-3 rounded-lg border text-center">
-                        <span className="block text-2xl font-bold">{formatConfig.mcq || 0}</span>
-                        <span className="text-[10px] text-muted-foreground uppercase font-bold">MCQs</span>
-                      </div>
-                      <div className="bg-muted/30 p-3 rounded-lg border text-center">
-                        <span className="block text-2xl font-bold">{formatConfig.short || 0}</span>
-                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Short Qs</span>
-                      </div>
-                      <div className="bg-muted/30 p-3 rounded-lg border text-center">
-                        <span className="block text-2xl font-bold">{formatConfig.long || 0}</span>
-                        <span className="text-[10px] text-muted-foreground uppercase font-bold">Long Qs</span>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="mcq-count" className="text-[10px] uppercase font-bold text-muted-foreground">MCQs</Label>
+                      <div className="relative">
+                        <Input 
+                          id="mcq-count"
+                          type="number" 
+                          min="0"
+                          value={formatConfig?.mcq || 0}
+                          onChange={(e) => setFormatConfig({...formatConfig, mcq: parseInt(e.target.value) || 0})}
+                          className="pl-8 font-bold"
+                        />
+                        <Zap className="absolute left-2.5 top-2.5 size-4 text-yellow-500 opacity-50" />
                       </div>
                     </div>
-                  ) : (
-                    <div className="p-8 border border-dashed rounded-xl flex flex-col items-center justify-center text-center gap-2 bg-muted/10">
-                      <Settings2 className="size-8 text-muted-foreground/50" />
-                      <p className="text-sm text-muted-foreground">Select a "Past Paper" above and click "Detect Pattern" to auto-fill this.</p>
+                    <div className="space-y-2">
+                      <Label htmlFor="short-count" className="text-[10px] uppercase font-bold text-muted-foreground">Short Qs</Label>
+                      <div className="relative">
+                        <Input 
+                          id="short-count"
+                          type="number" 
+                          min="0"
+                          value={formatConfig?.short || 0}
+                          onChange={(e) => setFormatConfig({...formatConfig, short: parseInt(e.target.value) || 0})}
+                          className="pl-8 font-bold"
+                        />
+                        <FileText className="absolute left-2.5 top-2.5 size-4 text-blue-500 opacity-50" />
+                      </div>
                     </div>
-                  )}
+                    <div className="space-y-2">
+                      <Label htmlFor="long-count" className="text-[10px] uppercase font-bold text-muted-foreground">Long Qs</Label>
+                      <div className="relative">
+                        <Input 
+                          id="long-count"
+                          type="number" 
+                          min="0"
+                          value={formatConfig?.long || 0}
+                          onChange={(e) => setFormatConfig({...formatConfig, long: parseInt(e.target.value) || 0})}
+                          className="pl-8 font-bold"
+                        />
+                        <BookOpen className="absolute left-2.5 top-2.5 size-4 text-purple-500 opacity-50" />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 bg-muted/30 rounded-lg border border-dashed flex items-center gap-3">
+                    <Settings2 className="size-4 text-muted-foreground" />
+                    <p className="text-[10px] text-muted-foreground leading-tight">
+                      To auto-fill this, select a "Past Paper" in Step 1 and click <strong>Detect Pattern</strong>. 
+                      You can also manually enter the numbers above.
+                    </p>
+                  </div>
                 </div>
               </div>
             </ScrollArea>
