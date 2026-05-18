@@ -2,11 +2,11 @@
 
 ## Current Phase
 
-- Phase 5: Sample Paper Generator (Core Complete)
+- Phase 5: Sample Paper Generator (100% Core Complete)
 
 ## Current Goal
 
-- Deploy current functional version to VPS and then implement final Phase 5 features.
+- Deploy to Hetzner VPS and finalize production infrastructure.
 
 ## Completed
 
@@ -26,10 +26,11 @@
     - SSE (Server-Sent Events) backend routing.
     - Real-time chat interface with markdown rendering.
     - Multi-resource context selection.
-    - URL-based session routing.
+    - **Persistent Context**: Resource selections saved per session.
+    - **URL Routing**: Unique URLs for each chat session.
 - **Phase 5: Sample Paper Generator**:
     - **Backend**: Pydantic schemas, `papers` router, and full background generation logic.
-    - **Worker**: `generate_paper_task` with detailed debug logging and error handling.
+    - **Worker**: `generate_paper_task` with detailed debug logging and robust cancellation.
     - **Frontend**: Interactive Generator dashboard with multi-resource selection.
     - **Format Detection**: AI-powered extraction of exam patterns, editable via UI.
     - **PDF Export**: Dual export modes (Study Guide & Question Paper) via WeasyPrint + Jinja2.
@@ -37,6 +38,10 @@
     - **URL Routing**: Unique URLs for each generated paper.
     - **Task Logging**: Comprehensive background job tracking in the `jobs` database table.
     - **Quota Enforcement**: Backend limits applied for questions, resources, and papers. Monthly ARQ cron job implemented.
+- **Real-Time Dashboard**:
+    - Comprehensive usage metrics and visual progress bars.
+    - Live tracking of background generation tasks with loaders and status indicators.
+    - Paper metadata (resource/question counts) displayed inline.
 
 ## In Progress
 
@@ -52,19 +57,16 @@
 
 - Mobile App / PWA Support.
 - Math/LaTeX rendering.
-
-
-
-## Open Questions
-
-- **Context Window**: For very large documents, we might need a basic truncation strategy until we implement RAG.
+- Payment Gateway (Razorpay).
 
 ## Architecture Decisions
 
 - **SSE (Server-Sent Events)**: Chosen for real-time streaming of LLM tokens.
 - **No RAG**: Full document text passed to prompt for better accuracy in small-to-medium documents.
+- **Independent Mutations**: PDF exports split into separate loading states for UX.
 
 ## Session Notes
 
-- Phase 5 Core generation logic is working but slow (approx 4 mins for large papers).
+- Phase 5 is fully complete including all polish requests (rename, delete, abort, persistent context).
+- UI bug fixed: Modal footer overflow and scrollbar aesthetics.
 - Deployment prioritized to ensure end-to-end functionality on live server.

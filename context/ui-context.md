@@ -40,17 +40,21 @@ The application supports both **Light and Dark modes**.
 - **TailwindCSS** with `dark:` variants.
 - **shadcn/ui** or **Radix UI** primitives for accessible, themeable components.
 - Icons: **Lucide React**.
+- **Utilities**: `.no-scrollbar` (Custom utility to hide scrollbar tracks while maintaining scroll functionality).
 
 ## Layout Patterns
 
 - **Standard Dashboard**: Left navigation, main content area.
 - **Dual Pane Solver**: Question input and scrollable context/answer area.
+- **URL Deep Linking**: Browser URL path drives the active session ID (Solver/Generator).
 - **Responsive Design**: Mobile-friendly sidebar (hamburger menu on small screens).
 
 ## Icons
 
 - `Sun` / `Moon`: Theme toggling
 - `FileText`: Resources
-- `Zap`: Solver
-- `FileEdit`: Generator
+- `Zap`: Solver (Questions)
+- `FileEdit`: Generator (Papers)
 - `Download`: Export
+- `Trash2`: Abort / Delete
+- `Edit2`: Rename
