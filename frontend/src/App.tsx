@@ -185,7 +185,7 @@ function App() {
               }
             />
             <Route
-              path="/generator"
+              path="/generator/:paperId?"
               element={
                 <ProtectedRoute>
                   <Layout>

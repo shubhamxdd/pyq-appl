@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useParams, useNavigate } from 'react-router-dom';
 import { resourcesApi } from '../api/resources';
 import { papersApi } from '../api/papers';
 import {
@@ -50,6 +51,9 @@ import { toast } from 'react-hot-toast';
 
 export default function Generator() {
   const queryClient = useQueryClient();
+  const { paperId } = useParams();
+  const navigate = useNavigate();
+
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [selectedResources, setSelectedResources] = useState<{id: string, role: string}[]>([]);
@@ -62,7 +66,23 @@ export default function Generator() {
     short_marks: 5,
     long_marks: 10
   });
-  const [activePaperId, setActivePaperId] = useState<string | null>(null);
+  const [activePaperId, setActivePaperId] = useState<string | null>(paperId || null);
+
+  // Sync state with URL
+  useEffect(() => {
+    if (paperId) {
+      setActivePaperId(paperId);
+    } else {
+      setActivePaperId(null);
+    }
+  }, [paperId]);
+
+  // Handle paper selection
+  const handleSelectPaper = (id: string) => {
+    if (id !== activePaperId) {
+      navigate(`/generator/${id}`);
+    }
+  };
 
   // --- QUERIES ---
   const { data: resources } = useQuery({
@@ -100,12 +120,13 @@ export default function Generator() {
 
   const createPaperMutation = useMutation({
     mutationFn: (data: any) => papersApi.create(data),
-    onSuccess: () => {
+    onSuccess: (newPaper) => {
       queryClient.invalidateQueries({ queryKey: ['papers'] });
       setIsCreateOpen(false);
       setTitle('');
       setSelectedResources([]);
       setFormatConfig(null);
+      navigate(`/generator/${newPaper.id}`);
       toast.success('Paper generation started!');
     },
   });
@@ -366,7 +387,7 @@ export default function Generator() {
                                 "cursor-pointer transition-all hover:border-primary/50 group",
                                 activePaperId === paper.id ? "border-primary bg-primary/5" : "border-border/50"
                             )}
-                            onClick={() => setActivePaperId(paper.id)}
+                            onClick={() => handleSelectPaper(paper.id)}
                         >
                             <CardContent className="p-4 flex items-center justify-between">
                                 <div className="flex items-center gap-3 min-w-0">
