@@ -175,7 +175,7 @@ function App() {
               }
             />
             <Route
-              path="/solver"
+              path="/solver/:sessionId?"
               element={
                 <ProtectedRoute>
                   <Layout>
