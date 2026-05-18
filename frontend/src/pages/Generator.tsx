@@ -90,6 +90,14 @@ export default function Generator() {
   };
 
   // --- QUERIES ---
+  const { data: user } = useQuery({
+    queryKey: ['me'],
+    queryFn: async () => {
+      const response = await api.get('/auth/me');
+      return response.data;
+    },
+  });
+
   const { data: resources } = useQuery({
     queryKey: ['resources'],
     queryFn: resourcesApi.list,
@@ -215,10 +223,21 @@ export default function Generator() {
   };
 
   const handleCreatePaper = () => {
-    if (!title || selectedResources.length === 0 || !formatConfig) {
-      toast.error('Please fill in all fields and detect a format.');
+    if (!title || selectedResources.length === 0 || isPatternEmpty) {
+      toast.error('Please fill in all fields and ensure the pattern is not empty.');
       return;
     }
+
+    // --- QUOTA CHECK ---
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthlyPapers = papers?.filter((p: any) => new Date(p.created_at) >= startOfMonth) || [];
+    
+    if (user?.plan === 'free' && monthlyPapers.length >= 3) {
+      toast.error('limit exceed, upgrade to continue');
+      return;
+    }
+
     createPaperMutation.mutate({
       title,
       resources: selectedResources.map(r => ({ resource_id: r.id, role: r.role })),
