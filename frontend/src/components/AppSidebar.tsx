@@ -107,7 +107,7 @@ export function AppSidebar() {
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden ml-2">
                     <span className="truncate font-semibold">{user?.email?.split('@')[0]}</span>
-                    <span className="truncate text-xs opacity-60 capitalize">{user?.plan} Plan</span>
+                    <span className="truncate text-xs opacity-60 capitalize">{user?.plan ?? 'Free'} Plan</span>
                   </div>
                   <ChevronRight className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
                 </SidebarMenuButton>

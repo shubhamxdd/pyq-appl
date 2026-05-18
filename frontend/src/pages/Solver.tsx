@@ -15,9 +15,6 @@ import {
   Trash2,
   History,
   Edit2,
-  Check,
-  X,
-  MoreVertical,
   PanelRight,
   FileText,
   Menu,
@@ -33,11 +30,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import {
   Sheet,
   SheetContent,
@@ -214,7 +206,10 @@ export default function Solver() {
     <div className="flex flex-col h-full bg-background md:bg-transparent">
       <div className="p-4 border-b">
         <Button
-          onClick={() => createSessionMutation.mutate()}
+          onClick={() => {
+            if(!createSessionMutation.isPending) createSessionMutation.mutate();
+          }}
+          disabled={createSessionMutation.isPending}
           className="w-full rounded-xl shadow-sm h-11"
           variant="default"
         >

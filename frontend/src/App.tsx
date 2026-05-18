@@ -13,7 +13,6 @@ import { useQuery } from '@tanstack/react-query';
 import api from './api/auth';
 import { useEffect } from 'react';
 
-import { SidebarProvider } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import {
   Card,

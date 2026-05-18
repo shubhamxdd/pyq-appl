@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { resourcesApi, type Resource } from '../api/resources';
+import { resourcesApi } from '../api/resources';
 import {
   FileText,
   Trash2,
@@ -15,7 +15,6 @@ import {
   Square,
   Edit2,
   Check,
-  X,
   FileUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
