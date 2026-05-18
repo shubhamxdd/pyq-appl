@@ -373,3 +373,24 @@ async def generate_paper_task(ctx, paper_id: str, job_id: str = None):
                     print(f"📉 [DB] Paper {paper_id} marked as FAILED.")
             except:
                 pass
+
+async def reset_monthly_quotas(ctx):
+    """
+    ARQ Cron job intended to run on the 1st of every month to reset the questions_used 
+    counter for all free tier users.
+    """
+    from sqlalchemy import update
+    from ..models.user import User
+    
+    print("\n🔄 [CRON] Starting monthly quota reset...")
+    async with SessionLocal() as db:
+        try:
+            # Only reset users on the free plan, although resetting all is also fine 
+            # if paid plan is truly 'unlimited' regardless of counter.
+            stmt = update(User).where(User.plan == "free").values(questions_used=0)
+            result = await db.execute(stmt)
+            await db.commit()
+            print(f"✅ [CRON] Monthly quotas reset successfully. Rows affected: {result.rowcount}")
+        except Exception as e:
+            print(f"❌ [CRON] Failed to reset quotas: {e}")
+            traceback.print_exc()

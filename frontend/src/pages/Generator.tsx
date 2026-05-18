@@ -204,15 +204,15 @@ export default function Generator() {
               Generate New Paper
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-            <DialogHeader className="p-6 pb-2">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0 gap-0">
+            <DialogHeader className="p-6 pb-2 border-b shrink-0">
               <DialogTitle className="text-2xl font-bold">New Sample Paper</DialogTitle>
               <DialogDescription>
                 Select your materials and define the exam pattern.
               </DialogDescription>
             </DialogHeader>
 
-            <ScrollArea className="flex-1 px-6">
+            <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-6 min-h-0 py-2">
               <div className="space-y-6 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="title" className="text-base font-semibold">Paper Title</Label>
@@ -359,9 +359,9 @@ export default function Generator() {
                   </div>
                 </div>
               </div>
-            </ScrollArea>
+            </div>
 
-            <DialogFooter className="p-6 pt-2 border-t bg-muted/20">
+            <DialogFooter className="p-6 pt-2 border-t bg-muted/20 shrink-0">
               <Button variant="ghost" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
               <Button 
                 onClick={handleCreatePaper} 

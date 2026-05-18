@@ -35,14 +35,6 @@ async def detect_format(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-# ... (skip rest to replace entire top file content correctly, wait, using replace with old_string is safer)
-
-@router.post("/detect-format")
-async def detect_format(
-    data: FormatDetectionRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
     # Fetch the resource
     result = await db.execute(
         select(Resource).where(Resource.id == data.resource_id, Resource.user_id == current_user.id)
@@ -94,12 +86,21 @@ async def create_paper(
 
     # 1. Quota Check
     if current_user.plan == "free":
-        count_result = await db.execute(select(func.count(Paper.id)).where(Paper.user_id == current_user.id))
+        from datetime import datetime, date
+        
+        now = datetime.utcnow()
+        start_of_month = datetime(now.year, now.month, 1)
+        
+        count_result = await db.execute(
+            select(func.count(Paper.id))
+            .where(Paper.user_id == current_user.id)
+            .where(Paper.created_at >= start_of_month)
+        )
         paper_count = count_result.scalar_one()
         if paper_count >= settings.PAPERS_LIMIT:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Free plan limit reached ({settings.PAPERS_LIMIT} papers). Please upgrade to generate more."
+                detail=f"Free plan limit reached ({settings.PAPERS_LIMIT} papers per month). Please upgrade to generate more."
             )
 
     # 2. Create Paper record

@@ -36,6 +36,7 @@
     - **Persistent Links**: Generated PDFs are securely stored and directly accessible.
     - **URL Routing**: Unique URLs for each generated paper.
     - **Task Logging**: Comprehensive background job tracking in the `jobs` database table.
+    - **Quota Enforcement**: Backend limits applied for questions, resources, and papers. Monthly ARQ cron job implemented.
 
 ## In Progress
 
@@ -49,7 +50,6 @@
 
 ## Deferred (Post-Launch)
 
-- Quota Enforcement (Free vs Paid limits, monthly cron reset).
 - Mobile App / PWA Support.
 - Math/LaTeX rendering.
 
