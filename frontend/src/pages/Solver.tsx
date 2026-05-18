@@ -462,8 +462,11 @@ export default function Solver() {
         </div>
 
         {/* Message List */}
-        <ScrollArea className="flex-1">
-          <div ref={scrollRef} className="max-w-4xl mx-auto p-4 md:p-6 space-y-6 md:space-y-8 pb-32">
+        <div 
+          ref={scrollRef} 
+          className="flex-1 overflow-y-auto"
+        >
+          <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6 md:space-y-8 pb-32">
             {activeSessionId && historyLoading ? (
                <div className="flex flex-col items-center justify-center h-[40vh] gap-4">
                   <Loader2 className="size-8 animate-spin text-primary opacity-20" />
@@ -528,7 +531,7 @@ export default function Solver() {
               ))
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Input Area */}
         <div className="absolute bottom-0 left-0 right-0 p-3 md:p-6 bg-gradient-to-t from-background via-background to-transparent z-10">
