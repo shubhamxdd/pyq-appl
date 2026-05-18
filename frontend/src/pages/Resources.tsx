@@ -2,8 +2,60 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { resourcesApi, type Resource } from '../api/resources';
-import { FileText, Trash2, Upload, Loader2, CheckCircle, XCircle, Clock, RefreshCw, ExternalLink, Square, Edit2, Check, X } from 'lucide-react';
-import { clsx } from 'clsx';
+import {
+  FileText,
+  Trash2,
+  Upload,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Clock,
+  RefreshCw,
+  ExternalLink,
+  Square,
+  Edit2,
+  Check,
+  X,
+  FileUp,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from "@/components/ui/button"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export default function Resources() {
   const queryClient = useQueryClient();
@@ -12,6 +64,10 @@ export default function Resources() {
   const [isUploading, setIsUploading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newFilename, setNewFilename] = useState('');
+  
+  // Dialog States
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [stopId, setStopId] = useState<string | null>(null);
 
   const { data: resources, isLoading, isError } = useQuery({
     queryKey: ['resources'],
@@ -38,6 +94,7 @@ export default function Resources() {
     mutationFn: resourcesApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resources'] });
+      setDeleteId(null);
       toast.success('Resource deleted');
     },
     onError: () => {
@@ -73,6 +130,7 @@ export default function Resources() {
     mutationFn: resourcesApi.stop,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resources'] });
+      setStopId(null);
       toast.success('Processing stopped');
     },
     onError: () => {
@@ -91,18 +149,6 @@ export default function Resources() {
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this resource? This will permanently remove the file.')) {
-      deleteMutation.mutate(id);
-    }
-  };
-
-  const handleStop = (id: string) => {
-    if (window.confirm('Abort processing? This will stop the AI extraction for this file.')) {
-      stopMutation.mutate(id);
-    }
-  };
-
   const startRenaming = (id: string, currentName: string) => {
     setEditingId(id);
     setNewFilename(currentName);
@@ -113,198 +159,305 @@ export default function Resources() {
     renameMutation.mutate({ id, filename: newFilename });
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'ready': return <CheckCircle className="w-5 h-5 text-green-500" />;
-      case 'failed': return <XCircle className="w-5 h-5 text-red-500" />;
-      case 'processing': return <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />;
-      default: return <Clock className="w-5 h-5 text-gray-400" />;
+      case 'ready': 
+        return <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20 flex items-center gap-1">
+          <CheckCircle className="size-3" /> Ready
+        </Badge>;
+      case 'failed': 
+        return <Badge variant="destructive" className="flex items-center gap-1">
+          <XCircle className="size-3" /> Failed
+        </Badge>;
+      case 'processing': 
+        return <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 border-blue-500/20 flex items-center gap-1">
+          <Loader2 className="size-3 animate-spin" /> Processing
+        </Badge>;
+      default: 
+        return <Badge variant="outline" className="flex items-center gap-1">
+          <Clock className="size-3" /> Pending
+        </Badge>;
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-          <FileText className="w-8 h-8 text-blue-600" />
+    <div className="container max-w-6xl py-8 space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+          <FileText className="size-8 text-primary" />
           Study Resources
         </h1>
+        <p className="text-muted-foreground">
+          Manage your notes, syllabi, and past papers for AI-powered solving.
+        </p>
       </div>
 
-      {/* Upload Section */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-        <h2 className="text-xl font-semibold mb-4 dark:text-white">Upload New Resource</h2>
-        <form onSubmit={handleUpload} className="flex flex-col md:flex-row gap-4 items-end">
-          <div className="flex-1 w-full">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">File (PDF or TXT)</label>
-            <input
-              type="file"
-              accept=".pdf,.txt"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-300"
-            />
-          </div>
-          <div className="w-full md:w-48">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Resource Type</label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2"
-            >
-              <option value="notes">Notes</option>
-              <option value="syllabus">Syllabus</option>
-              <option value="past_paper">Past Paper</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <button
-            type="submit"
-            disabled={!file || isUploading}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
-          >
-            {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-            Upload
-          </button>
-        </form>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Upload Card */}
+        <Card className="lg:col-span-1 border-border/50 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-xl flex items-center gap-2">
+              <FileUp className="size-5 text-primary" />
+              Upload
+            </CardTitle>
+            <CardDescription>
+              Add new PDF or Text materials (max 12 pages).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleUpload} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="file" className="text-sm font-semibold">Document File</Label>
+                <div className="relative group cursor-pointer">
+                  <div className={cn(
+                    "border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center transition-colors",
+                    file ? "border-primary bg-primary/5" : "border-muted-foreground/20 hover:border-primary/50 hover:bg-accent/50"
+                  )}>
+                    <Upload className={cn("size-8 mb-3 transition-colors", file ? "text-primary" : "text-muted-foreground")} />
+                    <p className="text-sm font-medium text-center">
+                      {file ? file.name : "Click to select or drag and drop"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">PDF, TXT up to 20MB</p>
+                  </div>
+                  <input
+                    id="file"
+                    type="file"
+                    accept=".pdf,.txt"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                </div>
+              </div>
 
-      {/* Resource List */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-900/50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Uploaded</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {isLoading ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-10 text-center">
-                  <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500" />
-                </td>
-              </tr>
-            ) : isError ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-10 text-center text-red-500 dark:text-red-400">
-                  <XCircle className="w-8 h-8 mx-auto mb-2" />
-                  Failed to load resources. Please try refreshing.
-                </td>
-              </tr>
-            ) : !resources || resources.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
-                  No resources uploaded yet.
-                </td>
-              </tr>
-            ) : (
-              resources.map((res) => (
-                <tr key={res.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                    {editingId === res.id ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={newFilename}
-                          onChange={(e) => setNewFilename(e.target.value)}
-                          className="bg-white dark:bg-gray-700 border border-blue-500 rounded px-2 py-1 text-sm focus:outline-none"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleRename(res.id);
-                            if (e.key === 'Escape') setEditingId(null);
-                          }}
-                        />
-                        <button onClick={() => handleRename(res.id)} className="text-green-600">
-                          <Check className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => setEditingId(null)} className="text-red-400">
-                          <X className="w-4 h-4" />
-                        </button>
+              <div className="space-y-2">
+                <Label htmlFor="type" className="text-sm font-semibold">Resource Type</Label>
+                <Select value={type} onValueChange={setType}>
+                  <SelectTrigger id="type" className="rounded-xl">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="notes">Lecture Notes</SelectItem>
+                    <SelectItem value="syllabus">Exam Syllabus</SelectItem>
+                    <SelectItem value="past_paper">Past Year Paper</SelectItem>
+                    <SelectItem value="other">Other Material</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full rounded-xl h-11 font-semibold"
+                disabled={!file || isUploading}
+              >
+                {isUploading ? (
+                  <><Loader2 className="mr-2 size-4 animate-spin" /> Uploading...</>
+                ) : (
+                  <><Upload className="mr-2 size-4" /> Upload Document</>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* List Card */}
+        <Card className="lg:col-span-2 border-border/50 shadow-sm overflow-hidden">
+          <CardHeader className="pb-3 border-b">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl">Your Documents</CardTitle>
+              <Badge variant="outline" className="font-mono">
+                {resources?.length || 0} Total
+              </Badge>
+            </div>
+          </CardHeader>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="w-[45%] font-bold">Name</TableHead>
+                  <TableHead className="font-bold">Type</TableHead>
+                  <TableHead className="font-bold">Status</TableHead>
+                  <TableHead className="text-right font-bold">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-48 text-center">
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <Loader2 className="size-8 animate-spin text-primary" />
+                        <p>Loading your library...</p>
                       </div>
-                    ) : (
-                      <div className="flex items-center gap-2 group/name">
-                        <span className="truncate max-w-[200px]">{res.filename}</span>
-                        <button 
-                          onClick={() => startRenaming(res.id, res.filename)}
-                          className="opacity-0 group-hover/name:opacity-100 text-gray-400 hover:text-blue-600 transition-opacity"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </button>
+                    </TableCell>
+                  </TableRow>
+                ) : isError ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-48 text-center">
+                      <div className="flex flex-col items-center gap-2 text-destructive">
+                        <XCircle className="size-8" />
+                        <p>Failed to load resources.</p>
+                        <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({queryKey: ['resources']})}>
+                          Try Again
+                        </Button>
                       </div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 capitalize">{res.type.replace('_', ' ')}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex flex-col gap-1.5 min-w-[120px]">
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(res.status)}
-                        <span className={clsx(
-                          "text-xs font-semibold",
-                          res.status === 'ready' ? "text-green-600" : res.status === 'failed' ? "text-red-600" : "text-blue-600"
-                        )}>
-                          {res.status.toUpperCase()}
-                        </span>
-                      </div>
-                      {res.status === 'processing' && (
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
-                          <div 
-                            className="bg-blue-600 h-full transition-all duration-500 ease-out" 
-                            style={{ width: `${res.processing_progress}%` }}
-                          />
+                    </TableCell>
+                  </TableRow>
+                ) : !resources || resources.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-48 text-center text-muted-foreground">
+                      <div className="flex flex-col items-center gap-3">
+                        <FileText className="size-12 opacity-10" />
+                        <div className="space-y-1">
+                          <p className="font-medium">No documents yet</p>
+                          <p className="text-xs">Upload your first study material to get started.</p>
                         </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {new Date(res.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end gap-2">
-                      <a
-                        href={res.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-2"
-                        title="View File"
-                      >
-                        <ExternalLink className="w-5 h-5" />
-                      </a>
-                      {res.status === 'failed' && (
-                        <button
-                          onClick={() => retryMutation.mutate(res.id)}
-                          className="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400 p-2"
-                          title="Retry Processing"
-                        >
-                          <RefreshCw className={clsx("w-5 h-5", retryMutation.isPending && "animate-spin")} />
-                        </button>
-                      )}
-                      {res.status === 'processing' && (
-                        <button
-                          onClick={() => handleStop(res.id)}
-                          className="text-orange-600 hover:text-orange-900 dark:hover:text-orange-400 p-2"
-                          title="Stop Processing"
-                        >
-                          <Square className={clsx("w-4 h-4 fill-current", stopMutation.isPending && "animate-pulse")} />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDelete(res.id)}
-                        className="text-red-600 hover:text-red-900 dark:hover:text-red-400 p-2"
-                        title="Delete Resource"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  resources.map((res) => (
+                    <TableRow key={res.id} className="group transition-colors hover:bg-muted/20">
+                      <TableCell>
+                        {editingId === res.id ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={newFilename}
+                              onChange={(e) => setNewFilename(e.target.value)}
+                              className="h-8 text-sm focus-visible:ring-primary rounded-lg"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleRename(res.id);
+                                if (e.key === 'Escape') setEditingId(null);
+                              }}
+                            />
+                            <Button size="icon" variant="ghost" className="size-8 text-emerald-600" onClick={() => handleRename(res.id)}>
+                              <Check className="size-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold truncate max-w-[200px]">{res.filename}</span>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="size-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => startRenaming(res.id, res.filename)}
+                            >
+                              <Edit2 className="size-3 text-muted-foreground" />
+                            </Button>
+                          </div>
+                        )}
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          Added {new Date(res.created_at).toLocaleDateString()}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs font-medium capitalize text-muted-foreground">
+                          {res.type.replace('_', ' ')}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-2 min-w-[120px]">
+                          {getStatusBadge(res.status)}
+                          {res.status === 'processing' && (
+                            <div className="space-y-1">
+                              <Progress value={res.processing_progress} className="h-1.5 w-full bg-blue-100 dark:bg-blue-900/20" />
+                              <p className="text-[10px] text-right font-mono font-medium text-blue-600 dark:text-blue-400">
+                                {res.processing_progress}%
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" asChild className="size-9 text-muted-foreground hover:text-primary">
+                            <a href={res.file_url} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="size-4" />
+                            </a>
+                          </Button>
+                          
+                          {res.status === 'failed' && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="size-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                              onClick={() => retryMutation.mutate(res.id)}
+                              disabled={retryMutation.isPending}
+                            >
+                              <RefreshCw className={cn("size-4", retryMutation.isPending && "animate-spin")} />
+                            </Button>
+                          )}
+
+                          {res.status === 'processing' && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="size-9 text-orange-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                              onClick={() => setStopId(res.id)}
+                            >
+                              <Square className="size-4 fill-current" />
+                            </Button>
+                          )}
+
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="size-9 text-destructive hover:bg-destructive/10"
+                            onClick={() => setDeleteId(res.id)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
       </div>
+
+      {/* Confirmation Dialogs */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Resource?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently remove the document from your library and storage.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => deleteId && deleteMutation.mutate(deleteId)}
+              className="bg-destructive hover:bg-destructive/90 rounded-xl"
+            >
+              Delete Document
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!stopId} onOpenChange={() => setStopId(null)}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Stop Processing?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to abort the AI extraction for this document? You can retry it later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Keep Processing</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => stopId && stopMutation.mutate(stopId)}
+              className="bg-orange-600 hover:bg-orange-700 rounded-xl"
+            >
+              Stop Now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
