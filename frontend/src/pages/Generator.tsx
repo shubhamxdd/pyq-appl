@@ -72,8 +72,6 @@ export default function Generator() {
   const [activePaperId, setActivePaperId] = useState<string | null>(paperId || null);
   const [editingPaperId, setEditingPaperId] = useState<string | null>(null);
   const [newPaperTitle, setNewPaperTitle] = useState('');
-  const [editingPaperId, setEditingPaperId] = useState<string | null>(null);
-  const [newPaperTitle, setNewPaperTitle] = useState('');
 
   // Sync state with URL
   useEffect(() => {
