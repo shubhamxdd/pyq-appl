@@ -67,7 +67,10 @@ export default function Solver() {
 
   // Handle session selection
   const handleSelectSession = (id: string) => {
-    navigate(`/solver/${id}`);
+    if (id !== activeSessionId) {
+      setMessages([]);
+      navigate(`/solver/${id}`);
+    }
   };
 
   // --- QUERIES ---
@@ -205,7 +208,8 @@ export default function Solver() {
                   });
                 }
                 if (data.session_id && !activeSessionId) {
-                  setActiveSessionId(data.session_id);
+                  // Important: Use navigate with replace to update the URL without adding a broken back-stack entry
+                  navigate(`/solver/${data.session_id}`, { replace: true });
                   queryClient.invalidateQueries({ queryKey: ['sessions'] });
                 }
                 if (data.error) toast.error(data.error);
@@ -299,7 +303,7 @@ export default function Solver() {
                   </div>
                 ) : (
                   <button
-                    onClick={() => setActiveSessionId(sess.id)}
+                    onClick={() => handleSelectSession(sess.id)}
                     className={cn(
                       "w-full text-left px-3 py-3 rounded-xl text-sm transition-all flex items-center gap-3",
                       activeSessionId === sess.id
@@ -488,7 +492,7 @@ export default function Solver() {
                             </div>
                           ) : (
                             <button
-                              onClick={() => setActiveSessionId(sess.id)}
+                              onClick={() => handleSelectSession(sess.id)}
                               className={cn(
                                 "w-full text-left px-3 py-3 rounded-xl text-sm transition-all flex items-center gap-3",
                                 activeSessionId === sess.id
