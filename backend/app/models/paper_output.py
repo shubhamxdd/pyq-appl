@@ -12,7 +12,8 @@ class PaperOutput(Base):
     questions = Column(JSON, nullable=False) # Array of question objects
     include_answers = Column(Boolean, default=True)
     include_explanations = Column(Boolean, default=True)
-    pdf_url = Column(String, nullable=True)
+    pdf_url = Column(String, nullable=True) # Full version (with answers/explanations as per toggles)
+    question_pdf_url = Column(String, nullable=True) # Clean question paper only
     created_at = Column(DateTime, default=datetime.utcnow)
 
     paper = relationship("Paper", back_populates="output")

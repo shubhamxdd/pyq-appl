@@ -31,8 +31,8 @@ export const papersApi = {
     return response.data;
   },
   
-  getPdf: async (id: string) => {
-    const response = await api.get(`/papers/${id}/pdf`);
+  getPdf: async (id: string, mode: string = 'full') => {
+    const response = await api.get(`/papers/${id}/pdf`, { params: { mode } });
     return response.data;
   }
 };

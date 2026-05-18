@@ -217,6 +217,7 @@ async def toggle_output_settings(
 @router.get("/{paper_id}/pdf")
 async def get_paper_pdf_url(
     paper_id: uuid.UUID,
+    mode: str = "full", # full | questions_only
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -235,32 +236,47 @@ async def get_paper_pdf_url(
     if not output:
         raise HTTPException(status_code=404, detail="Paper output not yet generated")
 
-    # 2. Check if PDF already exists
-    if output.pdf_url:
+    # 2. Check if specific PDF already exists
+    if mode == "questions_only" and output.question_pdf_url:
+        return {"url": output.question_pdf_url}
+    elif mode == "full" and output.pdf_url:
         return {"url": output.pdf_url}
 
-    # 3. Generate PDF
+    # 3. Determine PDF settings based on mode
+    include_answers = False
+    include_explanations = False
+    
+    if mode == "full":
+        include_answers = output.include_answers
+        include_explanations = output.include_explanations
+
+    # 4. Generate PDF
     try:
         pdf_file = await generate_paper_pdf(
-            title=paper.title,
+            title=paper.title + (" (Questions Only)" if mode == "questions_only" else ""),
             questions=output.questions,
             format_config=paper.format_config,
-            include_answers=output.include_answers,
-            include_explanations=output.include_explanations
+            include_answers=include_answers,
+            include_explanations=include_explanations
         )
     except Exception as e:
         logger.error(f"PDF Generation Error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
 
-    # 4. Upload to Spaces
-    object_name = f"papers/{paper_id}_{uuid.uuid4().hex[:8]}.pdf"
+    # 5. Upload to Spaces
+    suffix = "questions" if mode == "questions_only" else "full"
+    object_name = f"papers/{paper_id}_{suffix}_{uuid.uuid4().hex[:8]}.pdf"
     pdf_url = storage_service.upload_file(pdf_file.getvalue(), object_name)
     
     if not pdf_url:
         raise HTTPException(status_code=500, detail="Failed to upload PDF to storage")
 
-    # 5. Save URL to DB
-    output.pdf_url = pdf_url
+    # 6. Save URL to DB
+    if mode == "questions_only":
+        output.question_pdf_url = pdf_url
+    else:
+        output.pdf_url = pdf_url
+        
     await db.commit()
 
     return {"url": pdf_url}

@@ -118,7 +118,7 @@ export default function Generator() {
   });
 
   const exportPdfMutation = useMutation({
-    mutationFn: (id: string) => papersApi.getPdf(id),
+    mutationFn: ({ id, mode }: { id: string, mode?: string }) => papersApi.getPdf(id, mode),
     onSuccess: (data) => {
         if (data.url) {
             window.open(data.url, '_blank');
@@ -419,6 +419,7 @@ export default function Generator() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
+                                    {/* Full Version (Study Guide) */}
                                     {activeOutput?.pdf_url ? (
                                         <div className="flex gap-2">
                                             <Button 
@@ -428,15 +429,15 @@ export default function Generator() {
                                                 onClick={() => window.open(activeOutput.pdf_url, '_blank')}
                                             >
                                                 <Download className="size-4" />
-                                                View Generated PDF
+                                                Study Guide
                                             </Button>
                                             <Button 
                                                 size="sm" 
                                                 variant="ghost" 
                                                 className="h-9 px-2 text-muted-foreground hover:text-foreground"
-                                                onClick={() => exportPdfMutation.mutate(activePaperId)}
+                                                onClick={() => exportPdfMutation.mutate({ id: activePaperId!, mode: 'full' })}
                                                 disabled={exportPdfMutation.isPending}
-                                                title="Re-generate with current settings"
+                                                title="Re-generate Study Guide"
                                             >
                                                 {exportPdfMutation.isPending ? <Loader2 className="size-3 animate-spin" /> : <Settings2 className="size-3" />}
                                             </Button>
@@ -446,11 +447,35 @@ export default function Generator() {
                                             size="sm" 
                                             variant="outline" 
                                             className="gap-2 h-9 shadow-sm" 
-                                            onClick={() => activePaperId && exportPdfMutation.mutate(activePaperId)}
+                                            onClick={() => activePaperId && exportPdfMutation.mutate({ id: activePaperId, mode: 'full' })}
                                             disabled={exportPdfMutation.isPending || activePaper?.status !== 'done'}
                                         >
                                             {exportPdfMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-                                            {exportPdfMutation.isPending ? "Generating..." : "PDF Export"}
+                                            Export Study Guide
+                                        </Button>
+                                    )}
+
+                                    {/* Questions Only Version */}
+                                    {activeOutput?.question_pdf_url ? (
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline" 
+                                            className="gap-2 h-9 shadow-sm bg-blue-500/5 hover:bg-blue-500/10 text-blue-600 border-blue-500/20" 
+                                            onClick={() => window.open(activeOutput.question_pdf_url, '_blank')}
+                                        >
+                                            <FileText className="size-4" />
+                                            Question Paper
+                                        </Button>
+                                    ) : (
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline" 
+                                            className="gap-2 h-9 shadow-sm" 
+                                            onClick={() => activePaperId && exportPdfMutation.mutate({ id: activePaperId, mode: 'questions_only' })}
+                                            disabled={exportPdfMutation.isPending || activePaper?.status !== 'done'}
+                                        >
+                                            {exportPdfMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <FileText className="size-4" />}
+                                            Export Questions
                                         </Button>
                                     )}
                                 </div>

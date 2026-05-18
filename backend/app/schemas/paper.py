@@ -49,6 +49,7 @@ class PaperOutputOut(BaseModel):
     include_answers: bool
     include_explanations: bool
     pdf_url: Optional[str] = None
+    question_pdf_url: Optional[str] = None
     created_at: datetime
 
     class Config:
