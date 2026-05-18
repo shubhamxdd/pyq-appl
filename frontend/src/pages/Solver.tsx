@@ -376,9 +376,10 @@ export default function Solver() {
     <div className="flex h-[calc(100vh-6rem)] md:h-[calc(100vh-8rem)] gap-4 animate-in fade-in duration-500 relative">
       {/* --- DESKTOP HISTORY SIDEBAR --- */}
       <aside className={cn(
-        "hidden md:flex flex-col border rounded-2xl bg-muted/10 overflow-hidden shadow-sm transition-all duration-300",
+        "hidden md:flex flex-col border rounded-2xl bg-muted overflow-hidden shadow-sm transition-all duration-300",
         isHistoryCollapsed ? "w-16" : "w-72"
       )}>
+
         {isHistoryCollapsed ? (
           <div className="flex flex-col items-center py-4 gap-4">
              <Button variant="ghost" size="icon" onClick={() => setIsHistoryCollapsed(false)}>
@@ -392,15 +393,100 @@ export default function Solver() {
           </div>
         ) : (
           <div className="relative h-full flex flex-col">
-             <Button 
-                variant="ghost" 
-                size="icon" 
-                className="absolute right-2 top-4 z-10 size-8 hover:bg-muted"
-                onClick={() => setIsHistoryCollapsed(true)}
-              >
-                <PanelLeftClose className="size-4" />
-             </Button>
-             <HistoryContent />
+             <div className="p-4 border-b flex items-center gap-2">
+                <Button
+                  onClick={() => createSessionMutation.mutate()}
+                  className="flex-1 rounded-xl shadow-sm h-10"
+                  variant="default"
+                >
+                  <Plus className="size-4 mr-2" />
+                  New Session
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="size-10 hover:bg-muted shrink-0"
+                  onClick={() => setIsHistoryCollapsed(true)}
+                >
+                  <PanelLeftClose className="size-4" />
+                </Button>
+             </div>
+             <div className="flex-1 overflow-hidden">
+                <ScrollArea className="h-full">
+                  <div className="p-3 space-y-1">
+                    <div className="px-3 py-2 text-[11px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                      <History className="size-3" />
+                      Recent Conversations
+                    </div>
+                    {sessionsLoading ? (
+                      <div className="space-y-2 p-3">
+                        {[1, 2, 3].map(i => <div key={i} className="h-10 bg-muted/40 animate-pulse rounded-lg" />)}
+                      </div>
+                    ) : sessions?.length === 0 ? (
+                      <div className="py-12 text-center space-y-2 px-6">
+                        <MessageSquare className="size-8 mx-auto opacity-10" />
+                        <p className="text-xs text-muted-foreground">Your chat history will appear here.</p>
+                      </div>
+                    ) : (
+                      sessions?.map(sess => (
+                        <div key={sess.id} className="group relative">
+                          {editingSessionId === sess.id ? (
+                            <div className="px-2 py-1">
+                              <Input
+                                value={newSessionTitle}
+                                onChange={(e) => setNewSessionTitle(e.target.value)}
+                                className="h-9 text-xs focus-visible:ring-primary rounded-lg pr-8"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleRenameSession(sess.id);
+                                  if (e.key === 'Escape') setEditingSessionId(null);
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setActiveSessionId(sess.id)}
+                              className={cn(
+                                "w-full text-left px-3 py-3 rounded-xl text-sm transition-all flex items-center gap-3",
+                                activeSessionId === sess.id
+                                  ? "bg-primary/10 text-primary font-semibold"
+                                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                              )}
+                            >
+                              <MessageSquare className={cn("size-4 flex-shrink-0", activeSessionId === sess.id ? "opacity-100" : "opacity-40")} />
+                              <span className="truncate pr-8">{sess.title}</span>
+                            </button>
+                          )}
+                          
+                          {editingSessionId !== sess.id && (
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="size-7 text-muted-foreground hover:text-primary"
+                                onClick={() => startRenamingSession(sess.id, sess.title)}
+                              >
+                                <Edit2 className="size-3" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="size-7 text-muted-foreground hover:text-destructive"
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  if(window.confirm('Delete this conversation?')) deleteSessionMutation.mutate(sess.id); 
+                                }}
+                              >
+                                <Trash2 className="size-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+             </div>
           </div>
         )}
       </aside>
@@ -408,7 +494,7 @@ export default function Solver() {
       {/* --- MAIN CHAT AREA --- */}
       <div className="flex-1 flex flex-col min-w-0 bg-card border rounded-2xl overflow-hidden shadow-sm relative">
         {/* Chat Header */}
-        <div className="h-14 md:h-16 border-b flex items-center justify-between px-4 md:px-6 bg-card/50 backdrop-blur sticky top-0 z-10">
+        <div className="h-14 md:h-16 border-b flex items-center justify-between px-4 md:px-6 bg-card sticky top-0 z-10">
           <div className="flex items-center gap-2 md:gap-4 min-w-0">
             {/* Mobile History Trigger */}
             <Sheet>
@@ -569,10 +655,11 @@ export default function Solver() {
 
       {/* --- DESKTOP RIGHT SIDEBAR: CONTEXT LIBRARY --- */}
       {showContext && (
-        <aside className="hidden md:flex w-80 flex-col border rounded-2xl bg-muted/10 overflow-hidden shadow-sm animate-in slide-in-from-right duration-300">
+        <aside className="hidden md:flex w-80 flex-col border rounded-2xl bg-muted overflow-hidden shadow-sm animate-in slide-in-from-right duration-300">
            <ContextContent />
         </aside>
       )}
+
     </div>
   );
 }

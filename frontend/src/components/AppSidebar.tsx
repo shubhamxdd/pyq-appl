@@ -79,7 +79,7 @@ export function AppSidebar() {
                 className={cn(
                   "h-11 px-4 transition-colors",
                   location.pathname === item.path 
-                    ? "bg-primary/10 text-primary hover:bg-primary/15" 
+                    ? "bg-primary text-primary-foreground" 
                     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 )}
               >

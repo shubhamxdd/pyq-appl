@@ -7,7 +7,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset className="overflow-hidden">
-        <header className="flex h-14 md:h-16 shrink-0 items-center gap-2 border-b px-4 md:px-6 sticky top-0 bg-background/80 backdrop-blur-md z-30 transition-all">
+        <header className="flex h-14 md:h-16 shrink-0 items-center gap-2 border-b px-4 md:px-6 sticky top-0 bg-background z-30 transition-all">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4 hidden md:block" />
           <div className="flex-1 flex items-center gap-2">
