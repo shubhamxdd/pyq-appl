@@ -113,6 +113,8 @@ export default function Generator() {
 
   const readyResources = resources?.filter(r => r.status === 'ready') || [];
 
+  const isPatternEmpty = (formatConfig?.mcq || 0) + (formatConfig?.short || 0) + (formatConfig?.long || 0) === 0;
+
   // --- MUTATIONS ---
   const detectFormatMutation = useMutation({
     mutationFn: (resourceId: string) => papersApi.detectFormat(resourceId),
@@ -405,7 +407,7 @@ export default function Generator() {
               <Button variant="ghost" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
               <Button 
                 onClick={handleCreatePaper} 
-                disabled={!title || selectedResources.length === 0 || !formatConfig || createPaperMutation.isPending}
+                disabled={!title || selectedResources.length === 0 || isPatternEmpty || createPaperMutation.isPending}
                 className="gap-2"
               >
                 {createPaperMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Brain className="size-4" />}
