@@ -28,6 +28,8 @@ class PaperOut(BaseModel):
     format_config: Dict[str, Any]
     status: str
     delivery_mode: str
+    resource_count: Optional[int] = 0
+    question_count: Optional[int] = 0
     created_at: datetime
 
     class Config:

@@ -173,10 +173,24 @@ async def list_papers(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    # Fetch papers with resource count and question count
+    # We use a subquery for resource count to avoid complex joins issues in async sqlalchemy
+    from sqlalchemy.orm import selectinload
+    
     result = await db.execute(
-        select(Paper).where(Paper.user_id == current_user.id).order_by(Paper.created_at.desc())
+        select(Paper)
+        .where(Paper.user_id == current_user.id)
+        .options(selectinload(Paper.resources), selectinload(Paper.output))
+        .order_by(Paper.created_at.desc())
     )
-    return result.scalars().all()
+    papers = result.scalars().all()
+    
+    # Map counts manually to the objects (SQLAlchemy will handle serialization to PaperOut)
+    for p in papers:
+        p.resource_count = len(p.resources)
+        p.question_count = len(p.output.questions) if p.output else 0
+        
+    return papers
 
 @router.get("/{paper_id}", response_model=PaperOut)
 async def get_paper(
