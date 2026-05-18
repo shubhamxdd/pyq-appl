@@ -70,10 +70,12 @@ export default function Generator() {
     }
   });
 
+  const activePaper = papers?.find((p: any) => p.id === activePaperId);
+
   const { data: activeOutput, isLoading: outputLoading } = useQuery({
     queryKey: ['paper-output', activePaperId],
     queryFn: () => activePaperId ? papersApi.getOutput(activePaperId) : Promise.resolve(null),
-    enabled: !!activePaperId,
+    enabled: !!activePaperId && activePaper?.status === 'done',
   });
 
   const readyResources = resources?.filter(r => r.status === 'ready') || [];
@@ -482,7 +484,7 @@ export default function Generator() {
                             </Card>
                         ))}
 
-                        {!outputLoading && !activeOutput && (
+                        {!outputLoading && !activeOutput && activePaper?.status !== 'failed' && (
                              <div className="flex flex-col items-center justify-center p-20 gap-4 border-2 border-dashed rounded-3xl bg-muted/5">
                                 <div className="size-16 bg-muted rounded-full flex items-center justify-center">
                                     <Clock className="size-8 text-muted-foreground/50" />
@@ -490,6 +492,18 @@ export default function Generator() {
                                 <div className="text-center">
                                     <h3 className="text-lg font-bold">Paper is Generating</h3>
                                     <p className="text-sm text-muted-foreground">Our AI is crafting your exam based on your materials. This usually takes 30-60 seconds.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {!outputLoading && !activeOutput && activePaper?.status === 'failed' && (
+                             <div className="flex flex-col items-center justify-center p-20 gap-4 border-2 border-dashed rounded-3xl bg-destructive/5">
+                                <div className="size-16 bg-destructive/10 rounded-full flex items-center justify-center">
+                                    <AlertCircle className="size-8 text-destructive" />
+                                </div>
+                                <div className="text-center">
+                                    <h3 className="text-lg font-bold text-destructive">Generation Failed</h3>
+                                    <p className="text-sm text-muted-foreground">Something went wrong while generating this paper. Please check the worker logs and try again.</p>
                                 </div>
                             </div>
                         )}

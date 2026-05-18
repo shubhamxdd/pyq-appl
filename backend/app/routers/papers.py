@@ -4,6 +4,7 @@ from sqlalchemy import select
 from typing import List
 import uuid
 import json
+import logging
 
 from ..database import get_db
 from ..models.user import User
@@ -21,6 +22,8 @@ from ..llm.prompts import DETECT_FORMAT_PROMPT
 from ..config import settings
 from arq import create_pool
 from arq.connections import RedisSettings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/papers", tags=["papers"])
 
@@ -73,6 +76,12 @@ async def create_paper(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if not data.resources:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least one resource must be selected."
+        )
+
     # 2. Create Paper record
     new_paper = Paper(
         user_id=current_user.id,
@@ -91,7 +100,10 @@ async def create_paper(
             select(Resource).where(Resource.id == res_link.resource_id, Resource.user_id == current_user.id)
         )
         if not res_result.scalar_one_or_none():
-            continue
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Resource {res_link.resource_id} not found or unauthorized."
+            )
         
         # Insert into association table
         await db.execute(
@@ -107,7 +119,20 @@ async def create_paper(
     
     # 4. Enqueue background task
     redis = await create_pool(RedisSettings.from_dsn(settings.REDIS_URL))
-    await redis.enqueue_job("generate_paper_task", str(new_paper.id))
+    try:
+        job = await redis.enqueue_job("generate_paper_task", str(new_paper.id))
+        if job is None:
+            raise RuntimeError("Failed to enqueue generate_paper_task")
+    except Exception as e:
+        logger.error(f"Redis enqueue error: {e}")
+        new_paper.status = "failed"
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, 
+            detail="Paper generation queued failed, please retry."
+        )
+    finally:
+        await redis.close()
     
     return new_paper
 
