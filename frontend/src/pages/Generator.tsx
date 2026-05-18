@@ -12,7 +12,6 @@ import {
   XCircle,
   Clock,
   ChevronRight,
-  ChevronDown,
   BookOpen,
   FileText,
   Brain,
@@ -30,10 +29,8 @@ import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card"
 import {
   Dialog,
@@ -51,6 +48,7 @@ import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from 'react-hot-toast';
+import api from '@/api/auth';
 
 export default function Generator() {
   const queryClient = useQueryClient();
