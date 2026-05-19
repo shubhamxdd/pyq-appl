@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, FileText, Zap, FileEdit, Rocket, CheckCircle2 } from 'lucide-react';
+import { X, FileText, Zap, FileEdit, Rocket } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { cn } from '../lib/utils';
 
 export function WelcomeBanner() {
   const [isVisible, setIsVisible] = useState(false);

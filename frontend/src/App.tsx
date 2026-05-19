@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import Resources from './pages/Resources';
 import Solver from './pages/Solver';
 import Generator from './pages/Generator';
+import Landing from './pages/Landing';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import Layout from './components/Layout';
@@ -360,6 +361,7 @@ function App() {
         <Toaster position="top-right" reverseOrder={false} />
         <Router>
           <Routes>
+            <Route path="/" element={<Landing />} />
             <Route
               path="/login"
               element={
@@ -379,7 +381,7 @@ function App() {
             
             {/* Protected Routes with Layout */}
             <Route
-              path="/"
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Layout>
@@ -420,7 +422,7 @@ function App() {
             />
 
             {/* Fallbacks */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Router>
       </TooltipProvider>

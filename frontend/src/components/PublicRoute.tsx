@@ -5,7 +5,7 @@ export default function PublicRoute({ children }: { children: React.ReactNode })
   const token = useAuthStore((state) => state.token);
 
   if (token) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

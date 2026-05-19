@@ -49,7 +49,7 @@ export function AppSidebar() {
   }, [isDark]);
 
   const navItems = [
-    { label: "Dashboard", icon: LayoutDashboard, path: "/" },
+    { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
     { label: "Resources", icon: FileText, path: "/resources" },
     { label: "PYQ Solver", icon: Zap, path: "/solver" },
     { label: "Paper Gen", icon: FileEdit, path: "/generator" },
@@ -58,7 +58,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="h-16 flex items-center px-6">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/dashboard" className="flex items-center gap-2">
           <div className="bg-primary size-8 rounded-lg flex items-center justify-center">
             <Zap className="size-5 text-primary-foreground fill-current" />
           </div>
