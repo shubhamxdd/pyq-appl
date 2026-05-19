@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 days
     
-    FRONTEND_URL: str = "http://localhost:5173"
+    FRONTEND_URL: str = "http://127.0.0.1:5173"
     QUESTIONS_LIMIT: int = 30
     PAPERS_LIMIT: int = 3
     RESOURCES_LIMIT: int = 3
