@@ -38,6 +38,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { UpgradeModal } from '../components/UpgradeModal';
 
 export default function Solver() {
   const queryClient = useQueryClient();
@@ -53,6 +54,8 @@ export default function Solver() {
   const [newSessionTitle, setNewSessionTitle] = useState('');
   const [showContext, setShowContext] = useState(true);
   const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Sync state with URL
@@ -177,6 +180,15 @@ export default function Solver() {
         resource_ids: selectedResources,
         session_id: activeSessionId || undefined,
       });
+
+      if (response.status === 403) {
+        const errData = await response.json();
+        setUpgradeMessage(errData.detail || "You've reached your question limit.");
+        setIsUpgradeModalOpen(true);
+        setMessages(prev => prev.slice(0, -1));
+        setIsStreaming(false);
+        return;
+      }
 
       if (!response.ok) {
         const errData = await response.json();
@@ -421,6 +433,11 @@ export default function Solver() {
 
   return (
     <div className="flex h-[calc(100vh-6rem)] md:h-[calc(100vh-8rem)] gap-4 animate-in fade-in duration-500 relative">
+      <UpgradeModal 
+        isOpen={isUpgradeModalOpen} 
+        onClose={() => setIsUpgradeModalOpen(false)} 
+        message={upgradeMessage}
+      />
       {/* --- DESKTOP HISTORY SIDEBAR --- */}
       <aside className={cn(
         "hidden md:flex flex-col border rounded-2xl bg-muted overflow-hidden shadow-sm transition-all duration-300",

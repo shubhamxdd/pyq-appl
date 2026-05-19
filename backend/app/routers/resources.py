@@ -13,8 +13,14 @@ from ..services.storage import storage_service
 from arq import create_pool
 from ..config import settings
 from arq.connections import RedisSettings
+import logging
 
 router = APIRouter(prefix="/resources", tags=["resources"])
+
+# Configure logging for the task
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 @router.post("/", response_model=ResourceOut)
 async def upload_resource(
@@ -88,46 +94,58 @@ async def upload_resource(
             detail="Failed to upload file to storage"
         )
     
-    # Create DB record (not committed yet)
-    new_resource = Resource(
-        user_id=current_user.id,
-        filename=file.filename,
-        file_url=file_url,
-        type=type,
-        status="processing"
-    )
-    db.add(new_resource)
-    await db.flush() # Flush to get the ID but don't commit
-    
-    from ..models.job import Job
-    new_job = Job(
-        user_id=current_user.id,
-        job_type="ingest",
-        status="queued",
-        ref_id=new_resource.id
-    )
-    db.add(new_job)
-    await db.flush()
-    
-    # Enqueue background extraction task before committing DB
     try:
-        redis = await create_pool(RedisSettings.from_dsn(settings.REDIS_URL))
-        # Pass job_id as second argument
-        await redis.enqueue_job('extraction_task', str(new_resource.id), str(new_job.id))
+        # Create DB record (not committed yet)
+        new_resource = Resource(
+            user_id=current_user.id,
+            filename=file.filename,
+            file_url=file_url,
+            type=type,
+            status="processing"
+        )
+        db.add(new_resource)
+        await db.flush() # Flush to get the ID
         
-        # Only commit if enqueue was successful
-        await db.commit()
-        await db.refresh(new_resource)
+        from ..models.job import Job
+        new_job = Job(
+            user_id=current_user.id,
+            job_type="ingest",
+            status="queued",
+            ref_id=new_resource.id
+        )
+        db.add(new_job)
+        await db.flush()
+        
+        # Enqueue background extraction task
+        redis = await create_pool(RedisSettings.from_dsn(settings.REDIS_URL))
+        try:
+            # Use _job_id to make it easy to find in hooks
+            await redis.enqueue_job(
+                'extraction_task', 
+                str(new_resource.id), 
+                str(new_job.id),
+                _job_id=str(new_job.id)
+            )
+            await db.commit()
+            await db.refresh(new_resource)
+        except Exception as e:
+            await db.rollback()
+            raise e # Caught by outer try/except
+        finally:
+            if 'redis' in locals():
+                await redis.close()
+
     except Exception as e:
-        await db.rollback()
-        # Should also ideally delete the file from Spaces here if we were strict
+        # CLEANUP: Delete from storage if DB transaction failed
+        logger.error(f"Upload transaction failed, cleaning up storage: {e}")
+        storage_service.delete_file(object_name)
+        
+        if isinstance(e, HTTPException):
+            raise e
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to queue background task: {str(e)}"
+            detail=f"Failed to complete upload transaction: {str(e)}"
         )
-    finally:
-        if 'redis' in locals():
-            await redis.close()
     
     return new_resource
 
