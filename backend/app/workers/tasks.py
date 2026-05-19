@@ -108,7 +108,7 @@ async def extraction_task(ctx, resource_id: str, job_id: str = None):
                     
                     print(f"📡 [PAGE {i+1}/{pages_to_process}] Sending to OpenRouter (Nvidia Model)...")
                     
-                    async with httpx.AsyncClient(timeout=120.0) as client:
+                    async with httpx.AsyncClient(timeout=1200.0) as client:
                         vision_response = await client.post(
                             "https://openrouter.ai/api/v1/chat/completions",
                             headers={
