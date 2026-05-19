@@ -110,41 +110,35 @@ async def extraction_task(ctx, resource_id: str, job_id: str = None):
                     
                     print(f"📡 [PAGE {i+1}/{pages_to_process}] Sending to OpenRouter (Nvidia Model)...")
                     
-                    async with httpx.AsyncClient(timeout=1200.0) as client:
-                        vision_response = await client.post(
-                            "https://openrouter.ai/api/v1/chat/completions",
-                            headers={
-                                "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
-                                "Content-Type": "application/json",
-                                "HTTP-Referer": settings.FRONTEND_URL,
-                                "X-Title": "PYQ Solver App",
-                            },
-                            json={
-                                "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-                                "messages": [
-                                    {
-                                        "role": "user",
-                                        "content": [
-                                            {"type": "text", "text": "Extract all text from this page image precisely. Return only the extracted text."},
-                                            {
-                                                "type": "image_url",
-                                                "image_url": {
-                                                    "url": f"data:image/jpeg;base64,{img_base64}"
-                                                }
-                                            }
-                                        ]
+                    from ..llm.client import open_router_client
+                    
+                    messages = [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": "Extract all text from this page image precisely. Return only the extracted text."},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{img_base64}"
                                     }
-                                ]
-                            }
+                                }
+                            ]
+                        }
+                    ]
+
+                    try:
+                        vision_response = await open_router_client.complete_chat(
+                            messages=messages,
+                            model="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
                         )
                         
-                        if vision_response.status_code == 200:
-                            page_text = vision_response.json()['choices'][0]['message']['content']
-                            full_text.append(f"--- Page {i+1} ---\n{page_text}")
-                            print(f"✨ [PAGE {i+1}] Extraction successful.")
-                        else:
-                            error_msg = f"Vision API error: {vision_response.status_code} - {vision_response.text}"
-                            raise Exception(error_msg)
+                        page_text = vision_response['choices'][0]['message']['content']
+                        full_text.append(f"--- Page {i+1} ---\n{page_text}")
+                        print(f"✨ [PAGE {i+1}] Extraction successful.")
+                    except Exception as e:
+                        error_msg = f"Vision API failed after retries: {str(e)}"
+                        raise Exception(error_msg)
 
                 # Final Status Check before committing
                 async with SessionLocal() as final_check:
