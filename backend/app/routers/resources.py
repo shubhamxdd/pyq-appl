@@ -13,8 +13,14 @@ from ..services.storage import storage_service
 from arq import create_pool
 from ..config import settings
 from arq.connections import RedisSettings
+import logging
 
 router = APIRouter(prefix="/resources", tags=["resources"])
+
+# Configure logging for the task
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 @router.post("/", response_model=ResourceOut)
 async def upload_resource(
