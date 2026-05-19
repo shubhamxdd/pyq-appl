@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 async def extraction_task(ctx, resource_id: str, job_id: str = None):
     print(f"\n🚀 [TASK START] Resource ID: {resource_id}")
+
+    # raise RuntimeError("Simulated Worker Crash")
     
     async with SessionLocal() as db:
         try:
