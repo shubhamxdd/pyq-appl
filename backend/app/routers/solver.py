@@ -116,6 +116,9 @@ async def update_session(
     
     if data.title:
         session.title = data.title
+    if data.selected_resource_ids is not None:
+        # Convert UUIDs to strings for JSON storage
+        session.selected_resource_ids = [str(rid) for rid in data.selected_resource_ids]
         
     await db.commit()
     await db.refresh(session)
@@ -165,12 +168,22 @@ async def ask_question(
         sess_result = await db.execute(
             select(ChatSession).where(ChatSession.id == data.session_id, ChatSession.user_id == current_user.id)
         )
-        if not sess_result.scalar_one_or_none():
+        session = sess_result.scalar_one_or_none()
+        if not session:
             raise HTTPException(status_code=404, detail="Chat session not found")
         session_id = data.session_id
+        
+        # Update persistent resource selection if changed
+        new_resource_ids = [str(rid) for rid in data.resource_ids]
+        if session.selected_resource_ids != new_resource_ids:
+            session.selected_resource_ids = new_resource_ids
     else:
         # Auto-create session if none provided
-        new_sess = ChatSession(user_id=current_user.id, title=data.content[:30] + "...")
+        new_sess = ChatSession(
+            user_id=current_user.id, 
+            title=data.content[:30] + "...",
+            selected_resource_ids=[str(rid) for rid in data.resource_ids]
+        )
         db.add(new_sess)
         await db.flush()
         session_id = new_sess.id

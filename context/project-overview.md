@@ -33,11 +33,19 @@ A web application designed for students (K-12 and college) to upload their study
 - AI-powered answering using OpenRouter (Claude/Gemini).
 - Streaming responses (SSE) for real-time interaction.
 - Document-based context (passing text directly to the prompt).
+- **Persistent Context**: Remembers active document selections per session.
+- **Deep Linking**: URL-based routing for direct session access.
 
 ### Sample Paper Generator
 - Automatic format detection from uploaded past papers.
-- Customizable paper configurations (MCQ, Short, Long questions).
-- On-demand PDF generation with togglable answers and explanations.
+- Customizable paper configurations (MCQ, Short, Long questions), editable in UI.
+- On-demand PDF generation with dual modes (Full Study Guide vs. Clean Question Paper).
+- Generation management: Rename, Delete, and Abort in-progress tasks.
+
+### Real-Time Dashboard
+- Live activity tracking with background generation status.
+- Comprehensive usage metrics (Questions, Resources, Papers).
+- Visual quota bars and "Remaining" credit indicators.
 
 ## Scope
 

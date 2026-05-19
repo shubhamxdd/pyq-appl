@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useParams, useNavigate } from 'react-router-dom';
 import { resourcesApi } from '../api/resources';
 import { solverApi, type ChatMessage } from '../api/solver';
 import {
@@ -40,16 +41,37 @@ import {
 
 export default function Solver() {
   const queryClient = useQueryClient();
+  const { sessionId } = useParams();
+  const navigate = useNavigate();
+  
   const [question, setQuestion] = useState('');
   const [selectedResources, setSelectedResources] = useState<string[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(sessionId || null);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [newSessionTitle, setNewSessionTitle] = useState('');
   const [showContext, setShowContext] = useState(true);
   const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Sync state with URL
+  useEffect(() => {
+    if (sessionId) {
+      setActiveSessionId(sessionId);
+    } else {
+      setActiveSessionId(null);
+      setMessages([]);
+    }
+  }, [sessionId]);
+
+  // Handle session selection
+  const handleSelectSession = (id: string) => {
+    if (id !== activeSessionId) {
+      setMessages([]);
+      navigate(`/solver/${id}`);
+    }
+  };
 
   // --- QUERIES ---
   const { data: resources } = useQuery({
@@ -75,7 +97,7 @@ export default function Solver() {
     mutationFn: solverApi.createSession,
     onSuccess: (newSession) => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      setActiveSessionId(newSession.id);
+      navigate(`/solver/${newSession.id}`);
       setMessages([]);
       toast.success('New session created');
     },
@@ -86,8 +108,7 @@ export default function Solver() {
     onSuccess: (_, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
       if (activeSessionId === deletedId) {
-        setActiveSessionId(null);
-        setMessages([]);
+        navigate('/solver');
       }
       toast.success('Session deleted');
     },
@@ -102,12 +123,32 @@ export default function Solver() {
     },
   });
 
+  const updateResourcesMutation = useMutation({
+    mutationFn: ({ id, selected_resource_ids }: { id: string; selected_resource_ids: string[] }) => 
+      solverApi.updateSession(id, { selected_resource_ids }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    },
+  });
+
   // Sync history to messages state
   useEffect(() => {
     if (history) {
       setMessages(history);
     }
   }, [history]);
+
+  // Sync selected resources from active session
+  useEffect(() => {
+    if (activeSessionId && sessions) {
+      const activeSession = sessions.find((s: any) => s.id === activeSessionId);
+      if (activeSession) {
+        setSelectedResources(activeSession.selected_resource_ids || []);
+      }
+    } else {
+      setSelectedResources([]);
+    }
+  }, [activeSessionId, sessions]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -167,7 +208,8 @@ export default function Solver() {
                   });
                 }
                 if (data.session_id && !activeSessionId) {
-                  setActiveSessionId(data.session_id);
+                  // Important: Use navigate with replace to update the URL without adding a broken back-stack entry
+                  navigate(`/solver/${data.session_id}`, { replace: true });
                   queryClient.invalidateQueries({ queryKey: ['sessions'] });
                 }
                 if (data.error) toast.error(data.error);
@@ -186,9 +228,19 @@ export default function Solver() {
   };
 
   const toggleResource = (id: string) => {
-    setSelectedResources(prev => 
-      prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]
-    );
+    const newSelection = selectedResources.includes(id) 
+      ? selectedResources.filter(r => r !== id) 
+      : [...selectedResources, id];
+    
+    setSelectedResources(newSelection);
+
+    // Persist to backend if we have an active session
+    if (activeSessionId) {
+      updateResourcesMutation.mutate({ 
+        id: activeSessionId, 
+        selected_resource_ids: newSelection 
+      });
+    }
   };
 
   const startRenamingSession = (id: string, currentTitle: string) => {
@@ -251,7 +303,7 @@ export default function Solver() {
                   </div>
                 ) : (
                   <button
-                    onClick={() => setActiveSessionId(sess.id)}
+                    onClick={() => handleSelectSession(sess.id)}
                     className={cn(
                       "w-full text-left px-3 py-3 rounded-xl text-sm transition-all flex items-center gap-3",
                       activeSessionId === sess.id
@@ -440,7 +492,7 @@ export default function Solver() {
                             </div>
                           ) : (
                             <button
-                              onClick={() => setActiveSessionId(sess.id)}
+                              onClick={() => handleSelectSession(sess.id)}
                               className={cn(
                                 "w-full text-left px-3 py-3 rounded-xl text-sm transition-all flex items-center gap-3",
                                 activeSessionId === sess.id

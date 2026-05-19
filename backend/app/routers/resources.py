@@ -29,6 +29,17 @@ async def upload_resource(
             detail="Only PDF and Text files are supported"
         )
     
+    # Quota check
+    if current_user.plan == "free":
+        from sqlalchemy import func
+        count_result = await db.execute(select(func.count(Resource.id)).where(Resource.user_id == current_user.id))
+        resource_count = count_result.scalar_one()
+        if resource_count >= settings.RESOURCES_LIMIT:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Free plan limit reached ({settings.RESOURCES_LIMIT} resources). Please upgrade to upload more."
+            )
+
     # Chunked read with size enforcement (CodeRabbit fix)
     MAX_BYTES = settings.MAX_FILE_SIZE_MB * 1024 * 1024
     CHUNK_SIZE = 1024 * 1024 # 1MB chunks
@@ -88,10 +99,21 @@ async def upload_resource(
     db.add(new_resource)
     await db.flush() # Flush to get the ID but don't commit
     
+    from ..models.job import Job
+    new_job = Job(
+        user_id=current_user.id,
+        job_type="ingest",
+        status="queued",
+        ref_id=new_resource.id
+    )
+    db.add(new_job)
+    await db.flush()
+    
     # Enqueue background extraction task before committing DB
     try:
         redis = await create_pool(RedisSettings.from_dsn(settings.REDIS_URL))
-        await redis.enqueue_job('extraction_task', str(new_resource.id))
+        # Pass job_id as second argument
+        await redis.enqueue_job('extraction_task', str(new_resource.id), str(new_job.id))
         
         # Only commit if enqueue was successful
         await db.commit()
@@ -103,6 +125,9 @@ async def upload_resource(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to queue background task: {str(e)}"
         )
+    finally:
+        if 'redis' in locals():
+            await redis.close()
     
     return new_resource
 
@@ -185,10 +210,20 @@ async def retry_extraction(
     # Update status to processing (don't commit yet)
     resource.status = "processing"
     
+    from ..models.job import Job
+    new_job = Job(
+        user_id=current_user.id,
+        job_type="ingest",
+        status="queued",
+        ref_id=resource.id
+    )
+    db.add(new_job)
+    await db.flush()
+    
     # Re-enqueue background extraction task before committing DB
     try:
         redis = await create_pool(RedisSettings.from_dsn(settings.REDIS_URL))
-        await redis.enqueue_job('extraction_task', str(resource.id))
+        await redis.enqueue_job('extraction_task', str(resource.id), str(new_job.id))
         
         # Only commit if enqueue was successful
         await db.commit()
@@ -199,6 +234,9 @@ async def retry_extraction(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to queue background task: {str(e)}"
         )
+    finally:
+        if 'redis' in locals():
+            await redis.close()
     
     return resource
 

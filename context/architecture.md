@@ -12,8 +12,8 @@
 | LLM Gateway | OpenRouter | Access to Claude 3.5 Sonnet, Gemini 1.5 Pro, etc. |
 | Auth | Better Auth | Self-hosted auth (Email + Google) |
 | Job Queue | ARQ + Redis | Async background jobs (Paper gen, extraction) |
-| File Storage | Cloudflare R2 | S3-compatible file storage (Original PDFs + Exports) |
-| PDF Parsing | pdfplumber | Text extraction from PDFs |
+| File Storage | DigitalOcean Spaces | S3-compatible file storage (Original PDFs + Exports) |
+| PDF Parsing | pdfium2 + Vision AI | Text extraction from PDFs (Capped at 12 pages) |
 | PDF Output | WeasyPrint + Jinja2 | HTML to PDF rendering |
 
 ## System Boundaries
@@ -21,13 +21,13 @@
 - `backend/app/routers/` — API endpoint handlers and request validation.
 - `backend/app/services/` — Business logic (extraction, solver, generator, storage).
 - `backend/app/llm/` — OpenRouter client wrappers and prompt templates.
-- `backend/workers/` — ARQ background task definitions for long-running jobs.
+- `backend/app/workers/` — ARQ background task definitions for long-running jobs.
 - `frontend/src/api/` — API clients and React Query hooks.
 - `frontend/src/components/` — UI components (Tailwind + Theme support).
 
 ## Storage Model
 
-- **PostgreSQL**: Metadata for users, resources, extracted text, questions, answers, papers, and jobs.
+- **PostgreSQL**: Metadata for users, resources, extracted text, questions, answers, papers, and **background jobs** (audit trail).
 - **DigitalOcean Spaces**: Original uploaded PDFs and generated PDF exports.
 - **Redis**: Job queue state and application caching.
 - **Vector Storage**: *REMOVED for MVP*. Documents are passed directly to LLM context.
@@ -44,6 +44,8 @@
 2. **Automatic Delivery Mode**: 
     - Small Q&A responses use **Stream** mode (SSE).
     - Complex tasks (Paper Generation) use **Background** mode (ARQ) automatically.
-3. **On-Demand PDF**: PDFs are generated and cached in R2 only when a user requests a download.
-4. **Quota First**: Check `questions_used` before calling LLM APIs.
-5. **OpenRouter Priority**: Use models with large context windows to handle full document text.
+3. **On-Demand PDF**: PDFs are generated and cached in DigitalOcean only when a user requests a download.
+4. **Persistent Context**: Chat session resource selections are stored in the database (`selected_resource_ids`).
+5. **URL Source of Truth**: Active session IDs (Solver/Generator) are driven by the browser URL path.
+6. **Quota First**: Check `questions_used` and monthly paper limits before calling LLM APIs.
+7. **OpenRouter Priority**: Use models with large context windows to handle full document text.

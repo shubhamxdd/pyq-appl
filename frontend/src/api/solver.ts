@@ -3,6 +3,7 @@ import api, { API_URL } from './auth';
 export interface ChatSession {
   id: string;
   title: string;
+  selected_resource_ids: string[];
   created_at: string;
   updated_at: string;
 }
@@ -31,7 +32,7 @@ export const solverApi = {
     const response = await api.delete(`/solver/sessions/${id}`);
     return response.data;
   },
-  updateSession: async (id: string, data: { title: string }) => {
+  updateSession: async (id: string, data: { title?: string, selected_resource_ids?: string[] }) => {
     const response = await api.patch<ChatSession>(`/solver/sessions/${id}`, data);
     return response.data;
   },

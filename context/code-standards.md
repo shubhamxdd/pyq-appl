@@ -28,8 +28,10 @@
 
 - Automatic routing: Use a consistent header or response field to notify the frontend if a job is moved to background processing.
 - All routes must be protected by authentication.
+- **Fail-Fast**: Validate resource ownership and selection counts before starting long-running tasks.
 
 ## Data and Storage
 
 - Extracted text from resources is stored in the `resources` table (or a related `resource_content` table) as `TEXT`.
 - PDF generation uses Jinja2 templates for full layout control.
+- **Job Audit**: Every ARQ worker task must update its corresponding record in the `jobs` table to track status (`queued`, `running`, `done`, `failed`).
