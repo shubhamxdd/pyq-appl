@@ -6,7 +6,7 @@
 
 ## Current Goal
 
-- Transition from infrastructure stabilization to core feature enhancements (RAG or Payments).
+- Transition from infrastructure stabilization to core feature enhancements.
 
 ## Completed
 
@@ -20,41 +20,34 @@
     - **Transaction Integrity**: Refactored resource upload to ensure storage files are deleted if DB transactions fail.
     - **LLM Resilience**: Implemented exponential backoff retries (2s, 4s, 8s) in `OpenRouterClient` for all API calls.
     - **Production Deployment**: VPS updated and live with unified Docker setup behind system Nginx reverse proxy.
-- **Phase 6: Deployment**:
-    - Initial VPS Deployment (Hetzner, Nginx, SSL) finalized.
-- **Phase 5: Sample Paper Generator**:
-    - **Backend**: Pydantic schemas, `papers` router, and full background generation logic.
-    - **Worker**: `generate_paper_task` with detailed debug logging and robust cancellation.
-    - **Frontend**: Interactive Generator dashboard with multi-resource selection.
-    - **Format Detection**: AI-powered extraction of exam patterns, editable via UI.
-    - **PDF Export**: Dual export modes (Study Guide & Question Paper) via WeasyPrint + Jinja2.
-- **Phase 4: PYQ Solver**:
-    - Real-time chat interface with markdown rendering.
-    - SSE (Server-Sent Events) backend routing for token streaming.
-- **Phase 3: Resource Management**:
-    - DigitalOcean Spaces integration for S3-compatible storage.
-    - Vision-model-based text extraction (Gemini 1.5 Flash).
-- **Phase 2: Authentication**: Full-stack JWT and Google OAuth logic.
+- **Phase 6: Deployment**: Initial VPS Deployment finalized.
+- **Phase 5: Sample Paper Generator**: Backend, Worker, and Frontend flows complete with PDF export.
+- **Phase 4: PYQ Solver**: Real-time chat interface with SSE token streaming.
 
 ## In Progress
 
-- Sprint 7: Planning Phase 3 (Core Enhancements).
+- Sprint 7: Planning Core Enhancements & Roadmap.
 
-## Next Up
+## Next Up (Priority Tasks)
 
-1. **In-house RAG**: Implement LangChain + ChromaDB for chunked vector search (highly recommended for cost/scale).
-2. **Payment Integration**: Connect Razorpay to the Upgrade Modal for premium subscriptions.
-3. **Landing Page**: Build the "PrepAI" landing page based on the approved spec.
+1.  **In-house RAG (Vector Search):** Implement LangChain + ChromaDB pipeline to support larger documents and reduce API costs.
+2.  **Payment Integration (Razorpay):** Connect the frontend checkout to a backend webhook to automate plan upgrades.
+3.  **Full Landing Page Build:** Transform the `/` route from a placeholder into the high-converting "PrepAI" marketing site.
+4.  **Backend Migration Evaluation:** Analyze and potentially implement a migration from FastAPI/Python to Node.js/Express for a unified TypeScript stacSupport** for mobile "installability."
+    - Add **Google Profile Pictures** in the sidebar.
+    - Build a **Forgotk.
+5.  **UX Polish Pack:** 
+    - Implement **PWA  Password** flow with email verification.
 
 ## Architecture Decisions
 
-- **Dockerized Frontend**: Moved from static hosting to a containerized Nginx service for unified deployment.
-- **Global Worker Hooks**: Used `after_job_end` as a safety net for unexpected task failures.
-- **Client-Side Retry**: Moved LLM retry logic into the backend client to centralize resilience.
-- **No RAG (Current)**: Currently passing full document text; transition to Vector RAG is the next major architectural shift.
+- **Dockerized Frontend**: Containerized Nginx service for unified deployment.
+- **Path-Based Separation**: `/` reserved for Landing Page, `/dashboard` for the main application.
+- **Global Worker Hooks**: Safety net for unexpected task failures.
+- **Client-Side Retry**: Exponential backoff for LLM API resilience.
 
 ## Session Notes
 
-- Sprint 7: Infrastructure and Reliability phase fully verified and live.
-- Frontend is now served via Docker on port 3001.
-- App is stable, resilient to crashes, and handles quota limits gracefully.
+- Infrastructure and Reliability phase fully verified and live.
+- Routing refactored to support a future landing page at the root domain.
+- Roadmap updated with 5 major upcoming objectives.
