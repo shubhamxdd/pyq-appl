@@ -151,7 +151,12 @@ async def create_paper(
     # 4. Enqueue background task
     redis = await create_pool(RedisSettings.from_dsn(settings.REDIS_URL))
     try:
-        job = await redis.enqueue_job("generate_paper_task", str(new_paper.id), str(new_job.id))
+        job = await redis.enqueue_job(
+            "generate_paper_task", 
+            str(new_paper.id), 
+            str(new_job.id),
+            _job_id=str(new_job.id)
+        )
         if job is None:
             raise RuntimeError("Failed to enqueue generate_paper_task")
         await db.commit()

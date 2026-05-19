@@ -7,6 +7,7 @@ import Resources from './pages/Resources';
 import Solver from './pages/Solver';
 import Generator from './pages/Generator';
 import ProtectedRoute from './components/ProtectedRoute';
+import PublicRoute from './components/PublicRoute';
 import Layout from './components/Layout';
 import { useAuthStore } from './store/authStore';
 
@@ -39,6 +40,7 @@ import {
   ArrowRight
 } from "lucide-react"
 import { cn } from './lib/utils';
+import { WelcomeBanner } from './components/WelcomeBanner';
 
 const queryClient = new QueryClient();
 
@@ -110,6 +112,7 @@ function Dashboard() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
+      <WelcomeBanner />
       <div className="flex flex-col gap-2">
         <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3 text-foreground">
           <LayoutDashboard className="size-9 text-primary" />
@@ -357,8 +360,22 @@ function App() {
         <Toaster position="top-right" reverseOrder={false} />
         <Router>
           <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              }
+            />
             
             {/* Protected Routes with Layout */}
             <Route
