@@ -55,6 +55,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { UpgradeModal } from '../components/UpgradeModal';
 
 export default function Resources() {
   const queryClient = useQueryClient();
@@ -63,6 +64,8 @@ export default function Resources() {
   const [isUploading, setIsUploading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newFilename, setNewFilename] = useState('');
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
   
   // Dialog States
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -84,8 +87,13 @@ export default function Resources() {
       toast.success('File uploaded successfully!');
     },
     onError: (error: any) => {
-      const message = error.response?.data?.detail || 'Failed to upload file.';
-      toast.error(message);
+      if (error.response?.status === 403) {
+        setUpgradeMessage(error.response?.data?.detail || "You've reached your resource storage limit.");
+        setIsUpgradeModalOpen(true);
+      } else {
+        const message = error.response?.data?.detail || 'Failed to upload file.';
+        toast.error(message);
+      }
     },
   });
 
@@ -181,6 +189,11 @@ export default function Resources() {
 
   return (
     <div className="max-w-6xl space-y-8 animate-in fade-in duration-500">
+      <UpgradeModal 
+        isOpen={isUpgradeModalOpen} 
+        onClose={() => setIsUpgradeModalOpen(false)} 
+        message={upgradeMessage}
+      />
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
           <FileText className="size-8 text-primary" />

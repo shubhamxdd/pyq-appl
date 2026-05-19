@@ -49,6 +49,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from 'react-hot-toast';
 import api from '@/api/auth';
+import { UpgradeModal } from '../components/UpgradeModal';
 
 export default function Generator() {
   const queryClient = useQueryClient();
@@ -70,6 +71,8 @@ export default function Generator() {
   const [activePaperId, setActivePaperId] = useState<string | null>(paperId || null);
   const [editingPaperId, setEditingPaperId] = useState<string | null>(null);
   const [newPaperTitle, setNewPaperTitle] = useState('');
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
 
   // Sync state with URL
   useEffect(() => {
@@ -143,7 +146,13 @@ export default function Generator() {
       toast.success('Paper generation started!');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.detail || 'Failed to create paper.');
+      if (error.response?.status === 403) {
+        setUpgradeMessage(error.response?.data?.detail || "You've reached your monthly paper limit.");
+        setIsUpgradeModalOpen(true);
+        setIsCreateOpen(false);
+      } else {
+        toast.error(error.response?.data?.detail || 'Failed to create paper.');
+      }
     }
   });
 
@@ -241,7 +250,9 @@ export default function Generator() {
     const monthlyPapers = papers?.filter((p: any) => new Date(p.created_at) >= startOfMonth) || [];
     
     if (user?.plan === 'free' && monthlyPapers.length >= 3) {
-      toast.error('limit exceed, upgrade to continue');
+      setUpgradeMessage("You've reached your monthly limit for paper generation. Please upgrade to continue generating more papers.");
+      setIsUpgradeModalOpen(true);
+      setIsCreateOpen(false);
       return;
     }
 
@@ -254,6 +265,11 @@ export default function Generator() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
+      <UpgradeModal 
+        isOpen={isUpgradeModalOpen} 
+        onClose={() => setIsUpgradeModalOpen(false)} 
+        message={upgradeMessage}
+      />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3 text-foreground">
