@@ -6,7 +6,7 @@ import os
 
 # Set up Jinja2 environment
 template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
-env = Environment(loader=FileSystemLoader(template_dir))
+env = Environment(loader=FileSystemLoader(template_dir), autoescape=True)
 
 def map_option_letter(index: str) -> str:
     """Helper to map 0, 1, 2, 3 to A, B, C, D"""
