@@ -2,71 +2,59 @@
 
 ## Current Phase
 
-- Phase 5: Sample Paper Generator (100% Core Complete)
+- Phase 7: UI/UX Onboarding & Reliability (Infrastructure Complete)
 
 ## Current Goal
 
-- Deploy to Hetzner VPS and finalize production infrastructure.
+- Transition from infrastructure stabilization to core feature enhancements (RAG or Payments).
 
 ## Completed
 
-- **Initial context setup**: Populated `context/` with updated decisions.
-- **Git Initialization**: Repository initialized with branch-based workflow.
-- **Infrastructure**: Backend/Frontend scaffolded, Docker services running.
-- **Phase 2: Authentication**: Full-stack JWT and Google OAuth logic.
-- **Phase 3: Resource Management**:
-    - DigitalOcean Spaces integration for S3-compatible storage.
-    - Multipart file upload API with background task enqueuing.
-    - Vision-model-based text extraction (Gemini 1.5 Flash) capped at 12 pages.
-    - Frontend Resource Dashboard with real-time status polling.
-    - Modern Sidebar Layout with Dark/Light mode support.
-- **Phase 4: PYQ Solver**:
-    - Prompt engineering for academic tutoring.
-    - OpenRouter streaming client.
-    - SSE (Server-Sent Events) backend routing.
-    - Real-time chat interface with markdown rendering.
-    - Multi-resource context selection.
-    - **Persistent Context**: Resource selections saved per session.
-    - **URL Routing**: Unique URLs for each chat session.
+- **Sprint 7: Phase 1 (UI/UX & Onboarding)**:
+    - Implemented `PublicRoute` to redirect authenticated users away from login/register.
+    - Added dismissible `WelcomeBanner` on the Dashboard for new user guidance.
+    - Created `UpgradeModal` and integrated it into Solver, Generator, and Resources for quota limit handling.
+- **Sprint 7: Phase 2 (Infrastructure & Reliability)**:
+    - **Dockerized Frontend**: Multi-stage build with Nginx integrated into `docker-compose.yml` (Port 3001).
+    - **Worker Reliability**: Implemented `after_job_end` and `on_job_start` hooks in ARQ to prevent status deadlock on crashes.
+    - **Transaction Integrity**: Refactored resource upload to ensure storage files are deleted if DB transactions fail.
+    - **LLM Resilience**: Implemented exponential backoff retries (2s, 4s, 8s) in `OpenRouterClient` for all API calls.
+    - **Production Deployment**: VPS updated and live with unified Docker setup behind system Nginx reverse proxy.
+- **Phase 6: Deployment**:
+    - Initial VPS Deployment (Hetzner, Nginx, SSL) finalized.
 - **Phase 5: Sample Paper Generator**:
     - **Backend**: Pydantic schemas, `papers` router, and full background generation logic.
     - **Worker**: `generate_paper_task` with detailed debug logging and robust cancellation.
     - **Frontend**: Interactive Generator dashboard with multi-resource selection.
     - **Format Detection**: AI-powered extraction of exam patterns, editable via UI.
     - **PDF Export**: Dual export modes (Study Guide & Question Paper) via WeasyPrint + Jinja2.
-    - **Persistent Links**: Generated PDFs are securely stored and directly accessible.
-    - **URL Routing**: Unique URLs for each generated paper.
-    - **Task Logging**: Comprehensive background job tracking in the `jobs` database table.
-    - **Quota Enforcement**: Backend limits applied for questions, resources, and papers. Monthly ARQ cron job implemented.
-- **Real-Time Dashboard**:
-    - Comprehensive usage metrics and visual progress bars.
-    - Live tracking of background generation tasks with loaders and status indicators.
-    - Paper metadata (resource/question counts) displayed inline.
+- **Phase 4: PYQ Solver**:
+    - Real-time chat interface with markdown rendering.
+    - SSE (Server-Sent Events) backend routing for token streaming.
+- **Phase 3: Resource Management**:
+    - DigitalOcean Spaces integration for S3-compatible storage.
+    - Vision-model-based text extraction (Gemini 1.5 Flash).
+- **Phase 2: Authentication**: Full-stack JWT and Google OAuth logic.
 
 ## In Progress
 
-- VPS Deployment (Hetzner, Nginx, SSL).
+- Sprint 7: Planning Phase 3 (Core Enhancements).
 
 ## Next Up
 
-1. **Nginx & SSL**: Configure reverse proxy and Let's Encrypt for secure HTTPS access.
-2. **Production `.env`**: Finalize secrets and cloud storage paths.
-3. **Smoke Testing**: Run a full end-to-end test on the live server.
-
-## Deferred (Post-Launch)
-
-- Mobile App / PWA Support.
-- Math/LaTeX rendering.
-- Payment Gateway (Razorpay).
+1. **In-house RAG**: Implement LangChain + ChromaDB for chunked vector search (highly recommended for cost/scale).
+2. **Payment Integration**: Connect Razorpay to the Upgrade Modal for premium subscriptions.
+3. **Landing Page**: Build the "PrepAI" landing page based on the approved spec.
 
 ## Architecture Decisions
 
-- **SSE (Server-Sent Events)**: Chosen for real-time streaming of LLM tokens.
-- **No RAG**: Full document text passed to prompt for better accuracy in small-to-medium documents.
-- **Independent Mutations**: PDF exports split into separate loading states for UX.
+- **Dockerized Frontend**: Moved from static hosting to a containerized Nginx service for unified deployment.
+- **Global Worker Hooks**: Used `after_job_end` as a safety net for unexpected task failures.
+- **Client-Side Retry**: Moved LLM retry logic into the backend client to centralize resilience.
+- **No RAG (Current)**: Currently passing full document text; transition to Vector RAG is the next major architectural shift.
 
 ## Session Notes
 
-- Phase 5 is fully complete including all polish requests (rename, delete, abort, persistent context).
-- UI bug fixed: Modal footer overflow and scrollbar aesthetics.
-- Deployment prioritized to ensure end-to-end functionality on live server.
+- Sprint 7: Infrastructure and Reliability phase fully verified and live.
+- Frontend is now served via Docker on port 3001.
+- App is stable, resilient to crashes, and handles quota limits gracefully.
