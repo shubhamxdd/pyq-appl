@@ -83,7 +83,21 @@ export default function Landing() {
           const id = entry.target.id;
           if (id) {
             window.history.replaceState(null, '', `#${id}`);
+            
+            // Update Page Title based on section
+            const sectionNames: Record<string, string> = {
+              'features': 'Features',
+              'how-it-works': 'How it Works',
+              'pricing': 'Pricing'
+            };
+            
+            if (sectionNames[id]) {
+              document.title = `${sectionNames[id]} | PrepAI - Smart Exam Preparation`;
+            }
           }
+        } else if (window.scrollY < 200) {
+          // Reset to default title when at the top
+          document.title = "PrepAI | Stop guessing. Start acing.";
         }
       });
     };

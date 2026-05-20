@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { resourcesApi } from '../api/resources';
@@ -70,6 +70,10 @@ export default function Resources() {
   // Dialog States
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [stopId, setStopId] = useState<string | null>(null);
+
+  useEffect(() => {
+    document.title = "Study Library | PrepAI";
+  }, []);
 
   const { data: resources, isLoading, isError } = useQuery({
     queryKey: ['resources'],
