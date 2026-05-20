@@ -80,37 +80,39 @@ export default function Landing() {
     // Intersection Observer to update URL on scroll
     const observerOptions = {
       root: null,
-      rootMargin: '-80px 0px -50% 0px', // Adjust based on header height and trigger point
+      rootMargin: '-10% 0px -80% 0px',
       threshold: 0
     };
 
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const id = entry.target.id;
-          if (id) {
-            window.history.replaceState(null, '', `#${id}`);
-            
-            // Update Page Title based on section
-            const sectionNames: Record<string, string> = {
-              'features': 'Features',
-              'how-it-works': 'How it Works',
-              'pricing': 'Pricing'
-            };
-            
-            if (sectionNames[id]) {
-              document.title = `${sectionNames[id]} | PrepAI - Smart Exam Preparation`;
-            }
+      // Find the first entry that is intersecting
+      const intersectingEntry = entries.find(entry => entry.isIntersecting);
+      
+      if (intersectingEntry) {
+        const id = intersectingEntry.target.id;
+        if (id) {
+          setActiveSection(id);
+          window.history.replaceState(null, '', `#${id}`);
+          
+          const sectionNames: Record<string, string> = {
+            'how-it-works': 'How it Works',
+            'features': 'Features',
+            'pricing': 'Pricing'
+          };
+          
+          if (sectionNames[id]) {
+            document.title = `${sectionNames[id]} | PrepAI - Smart Exam Preparation`;
           }
-        } else if (window.scrollY < 200) {
-          // Reset to default title when at the top
-          document.title = "PrepAI | Stop guessing. Start acing.";
         }
-      });
+      }
     };
 
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
-    const sections = ['features', 'how-it-works', 'pricing'];
+    const observer = new IntersectionObserver(observerCallback, {
+      root: null,
+      rootMargin: '-100px 0px -60% 0px', // Trigger when section is in the top half
+      threshold: 0
+    });
+    const sections = ['how-it-works', 'features', 'pricing'];
     sections.forEach((id) => {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
@@ -127,6 +129,7 @@ export default function Landing() {
   const closeMenuAndScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
     setIsMenuOpen(false);
+    setActiveSection(id); // Ensure state updates immediately on click
     
     // Update URL hash immediately on click
     window.history.pushState(null, '', `#${id}`);
@@ -147,7 +150,18 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 transition-colors duration-300">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 transition-colors duration-300 relative overflow-x-hidden">
+      {/* Background Enhancements */}
+      <div className="fixed inset-0 -z-20">
+        {/* Subtle Grid Pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+        
+        {/* Animated Blobs */}
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-blob" />
+        <div className="absolute top-[20%] right-[-5%] w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[100px] animate-blob animation-delay-2000" />
+        <div className="absolute bottom-[-10%] left-[20%] w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[150px] animate-blob animation-delay-4000" />
+      </div>
+
       {/* Navigation */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
         scrolled ? 'bg-background/80 backdrop-blur-md border-b border-border py-3' : 'bg-transparent py-5'
@@ -173,22 +187,23 @@ export default function Landing() {
               { id: 'how-it-works', label: 'How it Works' },
               { id: 'features', label: 'Features' },
               { id: 'pricing', label: 'Pricing' }
-            ].map((item) => (
-              <a 
-                key={item.id}
-                href={`#${item.id}`} 
-                onClick={(e) => closeMenuAndScroll(e, item.id)} 
-                className={cn(
-                  "text-sm font-bold transition-all uppercase tracking-widest relative py-1",
-                  activeSection === item.id ? "text-primary" : "text-muted-foreground hover:text-primary"
-                )}
-              >
-                {item.label}
-                {activeSection === item.id && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary animate-in fade-in slide-in-from-left-2 duration-300" />
-                )}
-              </a>
-            ))}
+            ].map((item) => {
+              const isActive = activeSection === item.id;
+              return (
+                <a 
+                  key={item.id}
+                  href={`#${item.id}`} 
+                  onClick={(e) => closeMenuAndScroll(e, item.id)} 
+                  className={`text-sm font-bold uppercase tracking-widest transition-colors py-2 border-b-2 ${
+                    isActive 
+                      ? "text-primary border-primary" 
+                      : "text-muted-foreground border-transparent hover:text-primary"
+                  }`}
+                >
+                  {item.label}
+                </a>
+              );
+            })}
             
             <div className="h-6 w-px bg-border/50 mx-2" />
             
