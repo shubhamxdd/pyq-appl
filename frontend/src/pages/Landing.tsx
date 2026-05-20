@@ -384,8 +384,10 @@ export default function Landing() {
                   <h3 className="text-2xl font-black mb-2">PDF Export</h3>
                   <p className="text-muted-foreground text-sm font-medium leading-relaxed">Download your generated papers to print and practice offline, just like the real deal.</p>
                </div>
-               <Button variant="ghost" className="p-0 font-bold text-purple-600 hover:text-purple-700 hover:bg-transparent group/btn">
-                  See examples <ArrowRight className="ml-2 size-4 group-hover/btn:translate-x-1 transition-transform" />
+               <Button asChild variant="ghost" className="p-0 font-bold text-purple-600 hover:text-purple-700 hover:bg-transparent group/btn">
+                  <a href="https://pyq-space.sfo3.digitaloceanspaces.com/papers/fe472efc-ee7a-4f16-bc82-0ec54a4dc9c1_a370202f.pdf" target="_blank" rel="noopener noreferrer">
+                    See examples <ArrowRight className="ml-2 size-4 group-hover/btn:translate-x-1 transition-transform" />
+                  </a>
                </Button>
             </div>
 
@@ -688,21 +690,18 @@ export default function Landing() {
               </p>
             </div>
             <div className="space-y-4">
-              <h4 className="font-black text-sm uppercase tracking-widest">Product</h4>
+              <h4 className="font-black text-sm uppercase tracking-widest">Navigation</h4>
               <ul className="space-y-2">
-                <li><a href="#features" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Features</a></li>
-                <li><a href="#pricing" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Pricing</a></li>
-                <li><Link to="/solver" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">AI Solver</Link></li>
-                <li><Link to="/generator" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Mock Exams</Link></li>
+                <li><a href="#how-it-works" onClick={(e) => closeMenuAndScroll(e, 'how-it-works')} className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">How it Works</a></li>
+                <li><a href="#features" onClick={(e) => closeMenuAndScroll(e, 'features')} className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Features</a></li>
+                <li><a href="#pricing" onClick={(e) => closeMenuAndScroll(e, 'pricing')} className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Pricing</a></li>
               </ul>
             </div>
             <div className="space-y-4">
-              <h4 className="font-black text-sm uppercase tracking-widest">Company</h4>
+              <h4 className="font-black text-sm uppercase tracking-widest">Legal</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">About Us</a></li>
                 <li><a href="#" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Privacy Policy</a></li>
                 <li><a href="#" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Contact</a></li>
               </ul>
             </div>
           </div>
