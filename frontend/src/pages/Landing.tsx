@@ -17,7 +17,8 @@ import {
   Menu,
   X,
   Sun,
-  Moon
+  Moon,
+  ChevronDown
 } from 'lucide-react';
 import { 
   Card, 
@@ -34,6 +35,7 @@ export default function Landing() {
   const [scrolled, setScrolled] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
     // Check initial theme
@@ -112,17 +114,35 @@ export default function Landing() {
       rootMargin: '-100px 0px -60% 0px', // Trigger when section is in the top half
       threshold: 0
     });
+
+    // Scroll Reveal Observer
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('reveal-active');
+        }
+      });
+    }, {
+      root: null,
+      rootMargin: '0px 0px -100px 0px',
+      threshold: 0.1
+    });
+
     const sections = ['how-it-works', 'features', 'pricing'];
     sections.forEach((id) => {
       const el = document.getElementById(id);
       if (el) observer.observe(el);
     });
+
+    const revealElements = document.querySelectorAll('.reveal');
+    revealElements.forEach(el => revealObserver.observe(el));
     
     return () => {
       // Cleanup
       document.documentElement.style.scrollBehavior = 'auto';
       window.removeEventListener('scroll', handleScroll);
       observer.disconnect();
+      revealObserver.disconnect();
     };
   }, []);
 
@@ -148,6 +168,25 @@ export default function Landing() {
       });
     }
   };
+
+  const faqs = [
+    {
+      q: "Is the AI response accurate?",
+      a: "Yes. Unlike general AI, PrepAI uses a 'Smart RAG' engine that answers questions using ONLY the materials you upload. It provides page-level citations so you can verify every fact."
+    },
+    {
+      q: "What file formats do you support?",
+      a: "We currently support PDF files. You can upload textbooks, lecture notes, syllabus documents, and past year question papers."
+    },
+    {
+      q: "Is my data private and secure?",
+      a: "Absolutely. Your study materials are encrypted and stored securely. We never share your notes with third parties or use them to train public AI models."
+    },
+    {
+      q: "Can I generate papers for any subject?",
+      a: "Yes! PrepAI is subject-agnostic. Whether it's Physics, History, Biology, or Law, as long as you provide the source material, our AI can solve and generate papers for it."
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 transition-colors duration-300 relative overflow-x-hidden">
@@ -411,7 +450,7 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[280px]">
             {/* Bento 1: AI Solver */}
-            <div className="md:col-span-2 row-span-1 p-8 rounded-[2rem] bg-gradient-to-br from-blue-600 to-blue-800 text-white relative overflow-hidden group">
+            <div className="md:col-span-2 row-span-1 p-8 rounded-[2rem] bg-gradient-to-br from-blue-600 to-blue-800 text-white relative overflow-hidden group reveal">
               <div className="relative z-10 h-full flex flex-col justify-between">
                 <div>
                   <Badge className="bg-white/20 text-white border-none mb-4 font-bold">SMART RAG</Badge>
@@ -431,7 +470,7 @@ export default function Landing() {
             </div>
 
             {/* Bento 2: Smart Generation */}
-            <div className="md:col-span-1 row-span-2 p-8 rounded-[2rem] bg-muted border border-border relative overflow-hidden group">
+            <div className="md:col-span-1 row-span-2 p-8 rounded-[2rem] bg-muted border border-border relative overflow-hidden group reveal">
               <div className="relative z-10 h-full flex flex-col">
                 <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
                   <BrainCircuit className="size-7 text-primary" />
@@ -451,7 +490,7 @@ export default function Landing() {
             </div>
 
             {/* Bento 3: PDF Export */}
-            <div className="md:col-span-1 row-span-1 p-8 rounded-[2rem] bg-background border border-border shadow-sm flex flex-col justify-between group">
+            <div className="md:col-span-1 row-span-1 p-8 rounded-[2rem] bg-background border border-border shadow-sm flex flex-col justify-between group reveal">
                <div>
                   <div className="size-12 rounded-xl bg-purple-500/10 flex items-center justify-center mb-6">
                     <Download className="size-6 text-purple-600" />
@@ -467,7 +506,7 @@ export default function Landing() {
             </div>
 
             {/* Bento 4: Security */}
-            <div className="md:col-span-1 row-span-1 p-8 rounded-[2rem] bg-background border border-border shadow-sm flex flex-col justify-between group">
+            <div className="md:col-span-1 row-span-1 p-8 rounded-[2rem] bg-background border border-border shadow-sm flex flex-col justify-between group reveal">
                <div>
                   <div className="size-12 rounded-xl bg-orange-500/10 flex items-center justify-center mb-6">
                     <Shield className="size-6 text-orange-600" />
@@ -489,7 +528,7 @@ export default function Landing() {
         <div className="container mx-auto px-6 space-y-32">
           {/* Section 1: AI Solver */}
           <div className="grid md:grid-cols-2 gap-16 items-center">
-            <div className="order-2 md:order-1 relative">
+            <div className="order-2 md:order-1 relative reveal">
                <div className="absolute -inset-4 bg-primary/5 blur-3xl rounded-full" />
                <Card className="relative border border-border overflow-hidden shadow-2xl rounded-3xl transform -rotate-2">
                  <CardHeader className="border-b bg-muted/30 py-4">
@@ -522,7 +561,7 @@ export default function Landing() {
                  </CardContent>
                </Card>
             </div>
-            <div className="order-1 md:order-2 space-y-6">
+            <div className="order-1 md:order-2 space-y-6 reveal">
               <Badge className="bg-blue-100 text-blue-600 border-none px-3 py-1 font-bold">THE AI SOLVER</Badge>
               <h2 className="text-4xl md:text-5xl font-black tracking-tight leading-tight">Your 24/7<br />Personal Tutor</h2>
               <p className="text-lg text-muted-foreground leading-relaxed font-medium">
@@ -548,7 +587,7 @@ export default function Landing() {
 
           {/* Section 2: Generator */}
           <div className="grid md:grid-cols-2 gap-16 items-center">
-            <div className="space-y-6">
+            <div className="space-y-6 reveal">
               <Badge className="bg-purple-100 text-purple-600 border-none px-3 py-1 font-bold">MOCK GENERATOR</Badge>
               <h2 className="text-4xl md:text-5xl font-black tracking-tight leading-tight">Practice<br />Makes Perfect</h2>
               <p className="text-lg text-muted-foreground leading-relaxed font-medium">
@@ -568,7 +607,7 @@ export default function Landing() {
                  <Link to="/register">Create my first paper</Link>
               </Button>
             </div>
-            <div className="relative">
+            <div className="relative reveal">
                <div className="absolute -inset-4 bg-purple-500/5 blur-3xl rounded-full" />
                <Card className="relative border border-border overflow-hidden shadow-2xl rounded-3xl transform rotate-2">
                  <div className="bg-muted/30 p-4 border-b">
@@ -722,6 +761,44 @@ export default function Landing() {
                 <Link to="/register">Go Elite</Link>
               </Button>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-24 bg-background">
+        <div className="container mx-auto px-6 max-w-3xl">
+          <div className="text-center space-y-4 mb-16 reveal">
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight">Got questions?</h2>
+            <p className="text-muted-foreground text-lg">Everything you need to know about PrepAI.</p>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, i) => (
+              <div 
+                key={i} 
+                className="border border-border rounded-2xl overflow-hidden bg-muted/30 reveal"
+                style={{ transitionDelay: `${i * 100}ms` }}
+              >
+                <button 
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full p-6 text-left flex items-center justify-between hover:bg-muted/50 transition-colors"
+                >
+                  <span className="font-bold text-lg">{faq.q}</span>
+                  <ChevronDown className={cn("size-5 transition-transform duration-300", openFaq === i && "rotate-180")} />
+                </button>
+                <div className={cn(
+                  "grid transition-all duration-300 ease-in-out",
+                  openFaq === i ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                )}>
+                  <div className="overflow-hidden">
+                    <p className="p-6 pt-0 text-muted-foreground font-medium leading-relaxed">
+                      {faq.a}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
