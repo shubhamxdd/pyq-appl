@@ -6,14 +6,12 @@ import {
   MessageSquare, 
   FileText, 
   Check, 
-  Zap, 
   Shield, 
   ArrowRight, 
   Download, 
   BrainCircuit, 
   BookOpen, 
   GraduationCap,
-  Sparkles,
   Search,
   CheckCircle2,
   Menu,
@@ -24,18 +22,18 @@ import {
 import { 
   Card, 
   CardContent, 
-  CardDescription, 
   CardHeader, 
-  CardTitle 
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 export default function Landing() {
   const token = useAuthStore((state) => state.token);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
   useEffect(() => {
     // Check initial theme
@@ -66,7 +64,16 @@ export default function Landing() {
     document.documentElement.style.scrollBehavior = 'smooth';
     
     const handleScroll = () => {
+      const isTop = window.scrollY < 200;
       setScrolled(window.scrollY > 20);
+      
+      if (isTop) {
+        setActiveSection(null);
+        if (window.location.hash) {
+          window.history.replaceState(null, '', window.location.pathname);
+          document.title = "PrepAI | Stop guessing. Start acing.";
+        }
+      }
     };
     window.addEventListener('scroll', handleScroll);
 
@@ -146,7 +153,14 @@ export default function Landing() {
         scrolled ? 'bg-background/80 backdrop-blur-md border-b border-border py-3' : 'bg-transparent py-5'
       }`}>
         <div className="container mx-auto px-6 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 group">
+          <Link 
+            to="/" 
+            onClick={(e) => {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }} 
+            className="flex items-center gap-2 group"
+          >
             <div className="bg-primary p-1.5 rounded-lg transition-transform group-hover:rotate-6">
               <GraduationCap className="size-6 text-white" />
             </div>
@@ -155,9 +169,26 @@ export default function Landing() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
-            <a href="#how-it-works" onClick={(e) => closeMenuAndScroll(e, 'how-it-works')} className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-widest">How it Works</a>
-            <a href="#features" onClick={(e) => closeMenuAndScroll(e, 'features')} className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-widest">Features</a>
-            <a href="#pricing" onClick={(e) => closeMenuAndScroll(e, 'pricing')} className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-widest">Pricing</a>
+            {[
+              { id: 'how-it-works', label: 'How it Works' },
+              { id: 'features', label: 'Features' },
+              { id: 'pricing', label: 'Pricing' }
+            ].map((item) => (
+              <a 
+                key={item.id}
+                href={`#${item.id}`} 
+                onClick={(e) => closeMenuAndScroll(e, item.id)} 
+                className={cn(
+                  "text-sm font-bold transition-all uppercase tracking-widest relative py-1",
+                  activeSection === item.id ? "text-primary" : "text-muted-foreground hover:text-primary"
+                )}
+              >
+                {item.label}
+                {activeSection === item.id && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary animate-in fade-in slide-in-from-left-2 duration-300" />
+                )}
+              </a>
+            ))}
             
             <div className="h-6 w-px bg-border/50 mx-2" />
             
@@ -204,10 +235,25 @@ export default function Landing() {
 
         {/* Mobile Nav */}
         {isMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 w-full bg-background border-b border-border py-6 px-6 flex flex-col gap-6 animate-in slide-in-from-top duration-300">
-            <a href="#features" onClick={(e) => closeMenuAndScroll(e, 'features')} className="text-lg font-bold">Features</a>
-            <a href="#how-it-works" onClick={(e) => closeMenuAndScroll(e, 'how-it-works')} className="text-lg font-bold">How it Works</a>
-            <a href="#pricing" onClick={(e) => closeMenuAndScroll(e, 'pricing')} className="text-lg font-bold">Pricing</a>
+          <div className="md:hidden absolute top-full left-0 w-full bg-background border-b border-border py-6 px-6 flex flex-col gap-6 animate-in slide-in-from-top duration-300 shadow-xl">
+            {[
+              { id: 'how-it-works', label: 'How it Works' },
+              { id: 'features', label: 'Features' },
+              { id: 'pricing', label: 'Pricing' }
+            ].map((item) => (
+              <a 
+                key={item.id}
+                href={`#${item.id}`} 
+                onClick={(e) => closeMenuAndScroll(e, item.id)} 
+                className={cn(
+                  "text-lg font-bold flex items-center justify-between",
+                  activeSection === item.id ? "text-primary" : "text-foreground"
+                )}
+              >
+                {item.label}
+                {activeSection === item.id && <div className="size-2 rounded-full bg-primary" />}
+              </a>
+            ))}
             {token ? (
               <Button asChild className="w-full">
                 <Link to="/dashboard">Dashboard</Link>
