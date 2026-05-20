@@ -1,559 +1,736 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/store/authStore';
 import { 
-  Zap, 
-  GraduationCap, 
   Upload, 
   MessageSquare, 
-  FileEdit, 
-  CheckCircle2, 
   FileText, 
-  BarChart3, 
-  Download,
-  ChevronDown,
+  Check, 
+  Zap, 
+  Shield, 
+  ArrowRight, 
+  Download, 
+  BrainCircuit, 
+  BookOpen, 
+  GraduationCap,
+  Sparkles,
+  Search,
+  CheckCircle2,
   Menu,
   X,
   Sun,
   Moon
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { useAuthStore } from '@/store/authStore';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react';
+import heroImage from '@/assets/hero.png';
 
 export default function Landing() {
   const token = useAuthStore((state) => state.token);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [scrolled, setIsScrolled] = useState(false);
-  const [isDark, setIsDark] = useState(
-    document.documentElement.classList.contains('dark')
-  );
+  const [scrolled, setScrolled] = useState(false);
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    if (isDark) {
+    // Check initial theme
+    const isDarkTheme = document.documentElement.classList.contains('dark') || 
+                       (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    setIsDark(isDarkTheme);
+    if (isDarkTheme) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [isDark]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToSection = (id: string) => {
+  const toggleTheme = () => {
+    const newDark = !isDark;
+    setIsDark(newDark);
+    if (newDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
+
+  useEffect(() => {
+    // Enable smooth scroll on mount
+    document.documentElement.style.scrollBehavior = 'smooth';
+    
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+
+    // Intersection Observer to update URL on scroll
+    const observerOptions = {
+      root: null,
+      rootMargin: '-80px 0px -50% 0px', // Adjust based on header height and trigger point
+      threshold: 0
+    };
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          if (id) {
+            window.history.replaceState(null, '', `#${id}`);
+          }
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    const sections = ['features', 'how-it-works', 'pricing'];
+    sections.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+    
+    return () => {
+      // Cleanup
+      document.documentElement.style.scrollBehavior = 'auto';
+      window.removeEventListener('scroll', handleScroll);
+      observer.disconnect();
+    };
+  }, []);
+
+  const closeMenuAndScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    setIsMenuOpen(false);
+    
+    // Update URL hash immediately on click
+    window.history.pushState(null, '', `#${id}`);
+
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+      const offset = 80; // Account for fixed header
+      const bodyRect = document.body.getBoundingClientRect().top;
+      const elementRect = element.getBoundingClientRect().top;
+      const elementPosition = elementRect - bodyRect;
+      const offsetPosition = elementPosition - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
     }
-    setIsMenuOpen(false);
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
-      {/* --- STICKY HEADER --- */}
-      <header 
-        className={cn(
-          "fixed top-0 w-full z-50 transition-all duration-300 border-b",
-          scrolled ? "bg-background/80 backdrop-blur-md py-3 border-border" : "bg-transparent py-5 border-transparent"
-        )}
-      >
-        <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between">
-          <div 
-            className="flex items-center gap-2 cursor-pointer" 
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          >
-            <div className="bg-primary size-9 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-              <Zap className="size-6 text-primary-foreground fill-current" />
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 transition-colors duration-300">
+      {/* Navigation */}
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+        scrolled ? 'bg-background/80 backdrop-blur-md border-b border-border py-3' : 'bg-transparent py-5'
+      }`}>
+        <div className="container mx-auto px-6 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="bg-primary p-1.5 rounded-lg transition-transform group-hover:rotate-6">
+              <GraduationCap className="size-6 text-white" />
             </div>
-            <span className="font-black text-2xl tracking-tighter uppercase">PrepAI</span>
-          </div>
+            <span className="text-2xl font-black tracking-tighter">Prep<span className="text-primary">AI</span></span>
+          </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-8">
-            {['How it Works', 'Features', 'Pricing', 'FAQ'].map((item) => (
-              <button
-                key={item}
-                onClick={() => scrollToSection(item.toLowerCase().replace(/ /g, '-'))}
-                className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest"
-              >
-                {item}
-              </button>
-            ))}
-          </nav>
-
-          <div className="hidden md:flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setIsDark(!isDark)}
-              className="rounded-full size-10"
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#how-it-works" onClick={(e) => closeMenuAndScroll(e, 'how-it-works')} className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-widest">How it Works</a>
+            <a href="#features" onClick={(e) => closeMenuAndScroll(e, 'features')} className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-widest">Features</a>
+            <a href="#pricing" onClick={(e) => closeMenuAndScroll(e, 'pricing')} className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-widest">Pricing</a>
+            
+            <div className="h-6 w-px bg-border/50 mx-2" />
+            
+            {/* Theme Toggle */}
+            <button 
+              onClick={toggleTheme}
+              className="p-2 rounded-full hover:bg-muted transition-colors"
+              aria-label="Toggle theme"
             >
-              {isDark ? <Sun className="size-5" /> : <Moon className="size-5" />}
-            </Button>
+              {isDark ? <Sun className="size-5 text-yellow-500" /> : <Moon className="size-5 text-slate-700" />}
+            </button>
+
             {token ? (
-              <Button asChild className="rounded-full font-bold shadow-md px-6">
+              <Button asChild size="sm" className="font-bold">
                 <Link to="/dashboard">Dashboard</Link>
               </Button>
             ) : (
-              <>
-                <Button variant="ghost" asChild className="font-bold">
-                  <Link to="/login">Login</Link>
+              <div className="flex items-center gap-4">
+                <Link to="/login" className="text-sm font-bold hover:text-primary transition-colors uppercase tracking-widest">Login</Link>
+                <Button asChild size="sm" className="font-bold rounded-full px-6">
+                  <Link to="/register">Join Free</Link>
                 </Button>
-                <Button asChild className="rounded-full font-bold shadow-lg shadow-primary/20 px-6 text-sm">
-                  <Link to="/register">Sign Up Free</Link>
-                </Button>
-              </>
+              </div>
             )}
           </div>
 
-          {/* Mobile Menu Toggle */}
-          <div className="md:hidden flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setIsDark(!isDark)}
-              className="rounded-full size-10"
+          {/* Mobile Actions */}
+          <div className="flex items-center gap-2 md:hidden">
+            <button 
+              onClick={toggleTheme}
+              className="p-2 rounded-full hover:bg-muted transition-colors"
+              aria-label="Toggle theme"
             >
-              {isDark ? <Sun className="size-5" /> : <Moon className="size-5" />}
-            </Button>
-            <button className="p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
+              {isDark ? <Sun className="size-5 text-yellow-500" /> : <Moon className="size-5 text-slate-700" />}
+            </button>
+            <button 
+              className="p-2 text-foreground"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X /> : <Menu />}
             </button>
           </div>
         </div>
 
         {/* Mobile Nav */}
         {isMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 w-full bg-background border-b animate-in slide-in-from-top duration-300">
-            <div className="flex flex-col p-6 gap-4 text-center">
-              {['How it Works', 'Features', 'Pricing', 'FAQ'].map((item) => (
-                <button
-                  key={item}
-                  onClick={() => scrollToSection(item.toLowerCase().replace(/ /g, '-'))}
-                  className="font-bold text-lg"
-                >
-                  {item}
-                </button>
-              ))}
-              <Separator />
-              {token ? (
-                <Button asChild className="w-full h-12 rounded-xl font-bold">
-                  <Link to="/dashboard">Go to Dashboard</Link>
+          <div className="md:hidden absolute top-full left-0 w-full bg-background border-b border-border py-6 px-6 flex flex-col gap-6 animate-in slide-in-from-top duration-300">
+            <a href="#features" onClick={(e) => closeMenuAndScroll(e, 'features')} className="text-lg font-bold">Features</a>
+            <a href="#how-it-works" onClick={(e) => closeMenuAndScroll(e, 'how-it-works')} className="text-lg font-bold">How it Works</a>
+            <a href="#pricing" onClick={(e) => closeMenuAndScroll(e, 'pricing')} className="text-lg font-bold">Pricing</a>
+            {token ? (
+              <Button asChild className="w-full">
+                <Link to="/dashboard">Dashboard</Link>
+              </Button>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <Button asChild variant="outline" className="w-full">
+                  <Link to="/login">Login</Link>
                 </Button>
-              ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" asChild className="h-12 rounded-xl font-bold">
-                    <Link to="/login">Login</Link>
-                  </Button>
-                  <Button asChild className="h-12 rounded-xl font-bold">
-                    <Link to="/register">Sign Up</Link>
-                  </Button>
-                </div>
-              )}
-            </div>
+                <Button asChild className="w-full">
+                  <Link to="/register">Join Free</Link>
+                </Button>
+              </div>
+            )}
           </div>
         )}
-      </header>
+      </nav>
 
-      <main>
-        {/* --- HERO SECTION --- */}
-        <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
-          {/* Enhanced Animated Background Grid */}
-          <div className="absolute inset-0 -z-10 h-full w-full">
-            <div className="absolute inset-0 bg-background" />
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-            
-            {/* Animated Glow Blobs - High contrast for dark mode */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none overflow-hidden">
-               <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-500/20 dark:bg-blue-600/30 rounded-full blur-[120px] animate-pulse" />
-               <div className="absolute bottom-[20%] right-[-10%] w-[500px] h-[500px] bg-indigo-400/20 dark:bg-indigo-500/20 rounded-full blur-[120px] animate-bounce duration-[15s]" />
-               <div className="absolute top-[20%] right-[10%] w-[300px] h-[300px] bg-purple-500/10 dark:bg-purple-600/20 rounded-full blur-[80px] animate-pulse duration-[8s]" />
-            </div>
-          </div>
+      {/* Hero Section */}
+      <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
+        {/* Background Gradients */}
+        <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-0 left-0 -z-10 w-[400px] h-[400px] bg-blue-500/5 blur-[100px] rounded-full" />
 
-          <div className="max-w-7xl mx-auto px-4 md:px-8 text-center space-y-8 relative">
-            <Badge variant="secondary" className="px-4 py-1.5 rounded-full font-black tracking-tighter text-primary dark:text-blue-400 bg-primary/10 dark:bg-blue-500/10 border-none animate-bounce">
-               ✨ AI-POWERED EXAM PREP
+        <div className="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+          <div className="space-y-8 text-center md:text-left">
+            <Badge variant="secondary" className="bg-primary/10 text-primary border-none px-4 py-1 font-bold text-xs tracking-widest uppercase">
+              ✨ The future of exam prep is here
             </Badge>
-            <h1 className="text-5xl md:text-8xl font-black tracking-tighter text-foreground leading-[0.9]">
-              STOP GUESSING.<br /><span className="text-primary dark:text-blue-400 underline decoration-blue-500/30">START ACING.</span>
+            <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-[1.1]">
+              Stop guessing.<br />
+              <span className="text-primary underline decoration-primary/20 underline-offset-8">Start acing.</span>
             </h1>
-            <p className="max-w-2xl mx-auto text-muted-foreground text-lg md:text-xl font-medium leading-relaxed">
+            <p className="text-xl text-muted-foreground leading-relaxed max-w-xl mx-auto md:mx-0">
               Upload your syllabus, notes, or past papers. Get instant, accurate answers and generate full mock exams tailored exactly to your curriculum.
             </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+              <Button asChild size="lg" className="h-14 px-8 text-lg font-bold rounded-full group">
+                <Link to="/register">
+                  Start Studying for Free
+                  <ArrowRight className="ml-2 size-5 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" size="lg" className="h-14 px-8 text-lg font-bold rounded-full">
+                <a href="#how-it-works">See How it Works</a>
+              </Button>
+            </div>
             
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Button asChild size="lg" className="h-14 px-10 rounded-2xl text-lg font-black shadow-xl shadow-primary/20 dark:shadow-blue-500/10 w-full sm:w-auto transition-transform hover:scale-105 active:scale-95">
-                <Link to="/register">Start Studying for Free</Link>
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg" 
-                onClick={() => scrollToSection('how-it-works')}
-                className="h-14 px-10 rounded-2xl text-lg font-bold border-2 dark:border-primary/50 w-full sm:w-auto"
-              >
-                See How it Works
-              </Button>
+            <div className="flex items-center gap-6 justify-center md:justify-start pt-4">
+              <div className="flex -space-x-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="size-10 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px] font-black overflow-hidden">
+                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + 10}`} alt="User" />
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm font-bold text-muted-foreground">
+                <span className="text-foreground">2,000+</span> students acing exams
+              </p>
             </div>
+          </div>
 
-            {/* Stats Bar */}
-            <div className="pt-12 flex flex-wrap items-center justify-center gap-8 md:gap-16 opacity-70">
-              {[
-                { label: "Students", val: "10K+" },
-                { label: "Questions Solved", val: "50K+" },
-                { label: "Papers Generated", val: "5K+" },
-                { label: "Success Rate", val: "99%" },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center">
-                  <div className="text-2xl font-black tracking-tighter">{stat.val}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{stat.label}</div>
+          <div className="relative group">
+            <div className="absolute inset-0 bg-primary/10 blur-[60px] rounded-full group-hover:bg-primary/20 transition-all duration-500" />
+            <div className="relative border border-border shadow-2xl rounded-3xl overflow-hidden bg-background/50 backdrop-blur-sm transform hover:scale-[1.02] transition-transform duration-500">
+              <div className="h-10 bg-muted/50 border-b border-border flex items-center gap-2 px-4">
+                <div className="size-3 rounded-full bg-red-400" />
+                <div className="size-3 rounded-full bg-yellow-400" />
+                <div className="size-3 rounded-full bg-green-400" />
+                <div className="ml-4 h-5 w-48 bg-background/50 rounded-full" />
+              </div>
+              <img 
+                src={heroImage} 
+                alt="PrepAI Dashboard" 
+                className="w-full h-auto object-cover"
+              />
+            </div>
+            {/* Floating Element */}
+            <div className="absolute -bottom-6 -left-6 md:-left-12 p-6 bg-background border border-border rounded-2xl shadow-xl animate-in zoom-in duration-700 delay-300 max-w-[200px]">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="size-8 bg-green-500/10 rounded-lg flex items-center justify-center">
+                  <Sparkles className="size-4 text-green-600" />
                 </div>
-              ))}
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">AI Power</p>
+              </div>
+              <p className="text-xs font-bold">100% Curriculum Accuracy Verified</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How it Works */}
+      <section id="how-it-works" className="py-24 bg-muted/30 relative">
+        <div className="container mx-auto px-6">
+          <div className="text-center space-y-4 mb-16">
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight">Three steps to success</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Our engine handles the heavy lifting so you can focus on learning.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-12">
+            {[
+              {
+                step: "01",
+                title: "Upload",
+                description: "Drag and drop your PDFs or text notes securely. We support textbooks, lecture notes, and syllabus files.",
+                icon: Upload,
+                color: "text-blue-500",
+                bg: "bg-blue-500/10"
+              },
+              {
+                step: "02",
+                title: "Ask",
+                description: "Our AI Tutor answers your questions using *only* your materials. No hallucinations, just facts from your notes.",
+                icon: MessageSquare,
+                color: "text-primary",
+                bg: "bg-primary/10"
+              },
+              {
+                step: "03",
+                title: "Generate",
+                description: "Create realistic sample papers in seconds. From MCQs to long-form questions, test yourself like it's the real exam.",
+                icon: BrainCircuit,
+                color: "text-purple-500",
+                bg: "bg-purple-500/10"
+              }
+            ].map((item, i) => (
+              <div key={i} className="relative p-8 rounded-3xl bg-background border border-border shadow-sm hover:shadow-xl transition-all group">
+                <span className="absolute top-6 right-8 text-4xl font-black text-muted-foreground/10 group-hover:text-primary/10 transition-colors">
+                  {item.step}
+                </span>
+                <div className={`size-14 rounded-2xl ${item.bg} flex items-center justify-center mb-6`}>
+                  <item.icon className={`size-7 ${item.color}`} />
+                </div>
+                <h3 className="text-2xl font-black mb-4">{item.title}</h3>
+                <p className="text-muted-foreground leading-relaxed font-medium">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Bento Grid */}
+      <section id="features" className="py-24">
+        <div className="container mx-auto px-6">
+          <div className="text-center space-y-4 mb-16">
+             <Badge variant="outline" className="rounded-full px-4 py-1 border-primary/20 text-primary font-bold uppercase tracking-widest text-[10px]">The Toolkit</Badge>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight">Everything you need to prep</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[280px]">
+            {/* Bento 1: AI Solver */}
+            <div className="md:col-span-2 row-span-1 p-8 rounded-[2rem] bg-gradient-to-br from-blue-600 to-blue-800 text-white relative overflow-hidden group">
+              <div className="relative z-10 h-full flex flex-col justify-between">
+                <div>
+                  <Badge className="bg-white/20 text-white border-none mb-4 font-bold">SMART RAG</Badge>
+                  <h3 className="text-3xl font-black mb-2 leading-tight">Accurate Answers</h3>
+                  <p className="text-white/80 font-medium max-w-md">No hallucinations. We cite your exact notes so you can trust every word the AI says.</p>
+                </div>
+                <div className="flex gap-2">
+                   <div className="px-4 py-2 bg-white/10 rounded-full border border-white/20 flex items-center gap-2">
+                      <Search className="size-4" />
+                      <span className="text-xs font-bold">Source-Backed</span>
+                   </div>
+                </div>
+              </div>
+              <div className="absolute right-[-10%] bottom-[-20%] opacity-20 group-hover:scale-110 transition-transform duration-700">
+                <MessageSquare className="size-64" />
+              </div>
             </div>
 
-            {/* Browser Mockup Placeholder */}
-            <div className="pt-16 max-w-5xl mx-auto px-4">
-               <div className="rounded-3xl border-8 border-muted bg-muted/50 dark:bg-muted/20 shadow-2xl overflow-hidden aspect-video relative group border-t-border">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-background flex items-center justify-center">
-                      <div className="space-y-4 text-center">
-                         <div className="size-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <Zap className="size-10 text-primary dark:text-blue-400" />
-                         </div>
-                         <p className="text-sm font-black text-muted-foreground uppercase tracking-widest animate-pulse">Previewing PrepAI Dashboard</p>
-                         <div className="flex gap-2 justify-center">
-                            {[1,2,3].map(i => <div key={i} className="w-20 h-2 bg-muted-foreground/20 rounded-full" />)}
-                         </div>
+            {/* Bento 2: Smart Generation */}
+            <div className="md:col-span-1 row-span-2 p-8 rounded-[2rem] bg-muted border border-border relative overflow-hidden group">
+              <div className="relative z-10 h-full flex flex-col">
+                <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                  <BrainCircuit className="size-7 text-primary" />
+                </div>
+                <h3 className="text-3xl font-black mb-4 leading-tight">Smart Generation</h3>
+                <p className="text-muted-foreground font-medium mb-8">Generate MCQs, Short-form, and Long-form questions that mirror your exam board's patterns.</p>
+                
+                <div className="space-y-3 mt-auto">
+                   {['Multiple Choice', 'Short Answer', 'Detailed Essays', 'Case Studies'].map((t) => (
+                      <div key={t} className="flex items-center gap-3 bg-background/50 border border-border p-3 rounded-xl">
+                        <CheckCircle2 className="size-4 text-green-500" />
+                        <span className="text-xs font-bold">{t}</span>
                       </div>
+                   ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Bento 3: PDF Export */}
+            <div className="md:col-span-1 row-span-1 p-8 rounded-[2rem] bg-background border border-border shadow-sm flex flex-col justify-between group">
+               <div>
+                  <div className="size-12 rounded-xl bg-purple-500/10 flex items-center justify-center mb-6">
+                    <Download className="size-6 text-purple-600" />
                   </div>
-                  <div className="absolute top-4 left-6 flex gap-2">
-                     <div className="size-3 rounded-full bg-red-400/50" />
-                     <div className="size-3 rounded-full bg-amber-400/50" />
-                     <div className="size-3 rounded-full bg-green-400/50" />
+                  <h3 className="text-2xl font-black mb-2">PDF Export</h3>
+                  <p className="text-muted-foreground text-sm font-medium leading-relaxed">Download your generated papers to print and practice offline, just like the real deal.</p>
+               </div>
+               <Button variant="ghost" className="p-0 font-bold text-purple-600 hover:text-purple-700 hover:bg-transparent group/btn">
+                  See examples <ArrowRight className="ml-2 size-4 group-hover/btn:translate-x-1 transition-transform" />
+               </Button>
+            </div>
+
+            {/* Bento 4: Security */}
+            <div className="md:col-span-1 row-span-1 p-8 rounded-[2rem] bg-background border border-border shadow-sm flex flex-col justify-between group">
+               <div>
+                  <div className="size-12 rounded-xl bg-orange-500/10 flex items-center justify-center mb-6">
+                    <Shield className="size-6 text-orange-600" />
                   </div>
+                  <h3 className="text-2xl font-black mb-2">Secure Vault</h3>
+                  <p className="text-muted-foreground text-sm font-medium leading-relaxed">Your study materials are encrypted and never shared. Private notes stay private.</p>
+               </div>
+               <div className="flex gap-2">
+                 <Badge variant="secondary" className="bg-orange-500/5 text-orange-600 border-none font-bold text-[10px]">AES-256</Badge>
+                 <Badge variant="secondary" className="bg-orange-500/5 text-orange-600 border-none font-bold text-[10px]">PRIVATE</Badge>
                </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* --- HOW IT WORKS --- */}
-        <section id="how-it-works" className="py-24 bg-muted/30">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-16 text-center">
-            <div className="space-y-4">
-              <h2 className="text-3xl md:text-5xl font-black tracking-tight uppercase">Ace Your Finals in <span className="text-primary dark:text-blue-400 italic">3 Steps</span></h2>
-              <p className="text-muted-foreground font-medium">Simple, fast, and grounded in your specific study materials.</p>
+      {/* Feature Deep Dive */}
+      <section className="py-24 bg-background overflow-hidden">
+        <div className="container mx-auto px-6 space-y-32">
+          {/* Section 1: AI Solver */}
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <div className="order-2 md:order-1 relative">
+               <div className="absolute -inset-4 bg-primary/5 blur-3xl rounded-full" />
+               <Card className="relative border border-border overflow-hidden shadow-2xl rounded-3xl transform -rotate-2">
+                 <CardHeader className="border-b bg-muted/30 py-4">
+                    <div className="flex items-center gap-3">
+                       <div className="size-8 bg-primary rounded-full flex items-center justify-center">
+                          <BrainCircuit className="size-4 text-white" />
+                       </div>
+                       <div className="space-y-1">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">AI Tutor Session</p>
+                          <p className="text-xs font-bold">Physics Chapter 4: Waves</p>
+                       </div>
+                    </div>
+                 </CardHeader>
+                 <CardContent className="p-6 space-y-6">
+                    <div className="flex justify-end">
+                       <div className="bg-primary text-white p-3 rounded-2xl rounded-tr-none text-xs font-medium max-w-[80%]">
+                          Explain the difference between longitudinal and transverse waves.
+                       </div>
+                    </div>
+                    <div className="flex justify-start">
+                       <div className="bg-muted p-4 rounded-2xl rounded-tl-none text-xs font-medium max-w-[90%] space-y-3">
+                          <p>In a <strong>transverse wave</strong>, the particles of the medium vibrate perpendicular to the direction of wave motion (e.g., light waves).</p>
+                          <p>In a <strong>longitudinal wave</strong>, particles vibrate parallel to the wave motion (e.g., sound waves).</p>
+                          <div className="pt-2 flex items-center gap-2 text-[9px] font-bold text-primary">
+                             <BookOpen className="size-3" />
+                             SOURCE: NCERT Class 12 Physics, Page 142
+                          </div>
+                       </div>
+                    </div>
+                 </CardContent>
+               </Card>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
-              <div className="hidden md:block absolute top-24 left-1/4 right-1/4 h-0.5 border-t-2 border-dashed border-primary/20 -z-10" />
-
-              {[
-                { icon: Upload, title: "Upload", desc: "Drag and drop your PDFs or text notes securely. Syllabi, past year papers, or lecture notes—we handle it all.", color: "text-blue-500", bg: "bg-blue-500/10" },
-                { icon: MessageSquare, title: "Ask", desc: "Our AI Tutor answers your questions using ONLY your materials. No hallucinations, just pure academic groundedness.", color: "text-yellow-500", bg: "bg-yellow-500/10" },
-                { icon: FileEdit, title: "Generate", desc: "Create realistic sample papers in seconds. Auto-detect formats from past papers to build the perfect mock exam.", color: "text-purple-500", bg: "bg-purple-500/10" },
-              ].map((step, i) => (
-                <div key={i} className="space-y-6 group">
-                  <div className={cn("size-20 rounded-3xl mx-auto flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 duration-500", step.bg)}>
-                    <step.icon className={cn("size-10", step.color)} />
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-2xl font-black tracking-tighter uppercase">{i+1}. {step.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed px-4">{step.desc}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="order-1 md:order-2 space-y-6">
+              <Badge className="bg-blue-100 text-blue-600 border-none px-3 py-1 font-bold">THE AI SOLVER</Badge>
+              <h2 className="text-4xl md:text-5xl font-black tracking-tight leading-tight">Your 24/7<br />Personal Tutor</h2>
+              <p className="text-lg text-muted-foreground leading-relaxed font-medium">
+                Don't get stuck at 2 AM. Ask questions and get step-by-step explanations sourced directly from the textbooks your professor assigned. No more scrolling through forums.
+              </p>
+              <ul className="space-y-4">
+                {[
+                  "Context-aware answers from your notes",
+                  "Page-level citations for verification",
+                  "Support for complex equations & formulas",
+                  "Summarization of long chapters"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 font-bold text-sm">
+                    <div className="size-5 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
+                      <Check className="size-3 text-green-600" />
+                    </div>
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-        </section>
 
-        {/* --- FEATURES BENTO BOX --- */}
-        <section id="features" className="py-24 overflow-hidden">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-16">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-              <div className="space-y-4 max-w-2xl text-center md:text-left">
-                <h2 className="text-3xl md:text-6xl font-black tracking-tighter uppercase leading-[0.9]">Built for <br /><span className="text-primary dark:text-blue-400">High-Performance</span> Students</h2>
-                <p className="text-muted-foreground font-medium">Everything you need to transform your raw notes into an academic unfair advantage.</p>
+          {/* Section 2: Generator */}
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <div className="space-y-6">
+              <Badge className="bg-purple-100 text-purple-600 border-none px-3 py-1 font-bold">MOCK GENERATOR</Badge>
+              <h2 className="text-4xl md:text-5xl font-black tracking-tight leading-tight">Practice<br />Makes Perfect</h2>
+              <p className="text-lg text-muted-foreground leading-relaxed font-medium">
+                Automatically extract the exact exam pattern from past papers, or build your own. Generate infinite practice tests so you never run out of revision material.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="p-4 bg-muted/50 rounded-2xl border border-border">
+                    <p className="text-2xl font-black text-primary">01.</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mt-1">Smart Extraction</p>
+                 </div>
+                 <div className="p-4 bg-muted/50 rounded-2xl border border-border">
+                    <p className="text-2xl font-black text-primary">02.</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mt-1">Unlimited Tests</p>
+                 </div>
               </div>
-              <Button onClick={() => scrollToSection('pricing')} variant="ghost" className="font-bold underline decoration-primary/30">View Plans & Pricing</Button>
+              <Button asChild variant="outline" className="rounded-full font-bold px-8 h-12">
+                 <Link to="/register">Create my first paper</Link>
+              </Button>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[250px]">
-              <Card className="md:col-span-8 border-none bg-primary/5 group overflow-hidden relative">
-                <div className="absolute top-0 right-0 p-8 opacity-10 -rotate-12 group-hover:rotate-0 transition-transform duration-700">
-                  <MessageSquare className="size-48 text-primary" />
-                </div>
-                <CardHeader className="h-full justify-end p-8 text-left">
-                  <Badge className="w-fit mb-4 bg-primary/10 text-primary border-none font-bold">SOLVER</Badge>
-                  <CardTitle className="text-3xl font-black tracking-tighter uppercase mb-2 text-foreground">Accurate AI Tutor</CardTitle>
-                  <CardDescription className="text-base font-medium max-w-md">No hallucinations. Every answer is cited from your specific PDFs. It's like having a textbook that talks back to you.</CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="md:col-span-4 border-none bg-yellow-500/5 group overflow-hidden relative">
-                <CardHeader className="h-full justify-center text-center p-8">
-                  <div className="size-16 bg-yellow-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                    <CheckCircle2 className="size-8 text-yellow-600 dark:text-yellow-500" />
-                  </div>
-                  <CardTitle className="text-2xl font-black tracking-tighter uppercase mb-2 text-foreground">Verified Answers</CardTitle>
-                  <CardDescription className="text-sm font-medium">100% grounded responses based on YOUR uploaded material.</CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="md:col-span-4 border-none bg-purple-500/5 group overflow-hidden relative">
-                <CardHeader className="h-full justify-center text-center p-8">
-                   <div className="size-16 bg-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                    <FileEdit className="size-8 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <CardTitle className="text-2xl font-black tracking-tighter uppercase mb-2 text-foreground">Pattern Detection</CardTitle>
-                  <CardDescription className="text-sm font-medium">AI analyzes past year papers to extract MCQ, Short, and Long answer counts automatically.</CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="md:col-span-8 border-none bg-blue-500/5 group overflow-hidden relative">
-                <div className="absolute bottom-0 right-0 p-8 opacity-10 group-hover:translate-y-2 transition-transform duration-700">
-                  <Download className="size-40 text-blue-600" />
-                </div>
-                <CardHeader className="h-full justify-center p-8 text-left">
-                  <Badge className="w-fit mb-4 bg-blue-500/10 text-blue-600 border-none font-bold uppercase">Export</Badge>
-                  <CardTitle className="text-3xl font-black tracking-tighter uppercase mb-2 text-foreground">Professional PDF Export</CardTitle>
-                  <CardDescription className="text-base font-medium max-w-md">Download beautiful, print-ready question papers and study guides with your school/college layout.</CardDescription>
-                </CardHeader>
-              </Card>
+            <div className="relative">
+               <div className="absolute -inset-4 bg-purple-500/5 blur-3xl rounded-full" />
+               <Card className="relative border border-border overflow-hidden shadow-2xl rounded-3xl transform rotate-2">
+                 <div className="bg-muted/30 p-4 border-b">
+                    <div className="flex justify-between items-center">
+                       <span className="text-xs font-black uppercase tracking-tighter">Mock Exam v2.1</span>
+                       <Badge variant="outline" className="text-[10px] font-black uppercase">Biology Mid-term</Badge>
+                    </div>
+                 </div>
+                 <CardContent className="p-8 space-y-8">
+                    <div className="space-y-3">
+                       <p className="text-xs font-bold text-muted-foreground">SECTION A: MULTIPLE CHOICE</p>
+                       <div className="space-y-4">
+                          <div className="p-3 bg-muted/20 border border-border rounded-xl">
+                             <p className="text-sm font-bold mb-3">1. Which of the following is the powerhouse of the cell?</p>
+                             <div className="grid grid-cols-2 gap-2">
+                                {['Nucleus', 'Mitochondria', 'Ribosome', 'Golgi'].map((opt) => (
+                                   <div key={opt} className="px-3 py-1.5 border border-border rounded-md text-[10px] font-medium bg-background">
+                                      {opt}
+                                   </div>
+                                ))}
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                    <div className="flex justify-between items-center pt-4 border-t border-dashed">
+                        <div className="flex items-center gap-2">
+                           <FileText className="size-4 text-purple-600" />
+                           <span className="text-[10px] font-bold">12 Questions Generated</span>
+                        </div>
+                        <Button size="sm" className="h-8 rounded-full text-[10px] font-bold bg-purple-600">Download PDF</Button>
+                    </div>
+                 </CardContent>
+               </Card>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* --- PRICING --- */}
-        <section id="pricing" className="py-24 bg-muted/30">
-          <div className="max-w-7xl mx-auto px-4 md:px-8 space-y-16">
-            <div className="text-center space-y-4">
-              <h2 className="text-4xl md:text-6xl font-black tracking-tight uppercase text-foreground">Simple Pricing</h2>
-              <p className="text-muted-foreground font-medium text-lg">Start for free, upgrade when you're ready for elite performance.</p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
-              {/* Free Tier */}
-              <Card className="border-border/50 shadow-sm relative overflow-hidden bg-background flex flex-col transition-all hover:border-primary/20">
-                <CardHeader className="p-8 pb-4">
-                  <CardTitle className="text-2xl font-black tracking-tighter uppercase text-muted-foreground">Standard</CardTitle>
-                  <div className="pt-4 flex items-baseline gap-1 text-foreground">
-                    <span className="text-5xl font-black tracking-tighter">₹0</span>
-                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Forever</span>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-8 pt-0 space-y-8 flex-1">
-                  <Separator className="opacity-50" />
-                  <ul className="space-y-4 pt-4">
-                    {[
-                      { text: "3 Study Resources", icon: CheckCircle2 },
-                      { text: "30 AI Questions / mo", icon: CheckCircle2 },
-                      { text: "3 Sample Papers / mo", icon: CheckCircle2 },
-                      { text: "Standard Speed", icon: CheckCircle2 },
-                      { text: "PDF Downloads", icon: X, muted: true },
-                    ].map((feature, i) => (
-                      <li key={i} className={cn("flex items-center gap-3 text-sm font-bold tracking-tight", feature.muted ? "text-muted-foreground/30 line-through" : "text-foreground/80")}>
-                        <feature.icon className={cn("size-5 shrink-0", feature.muted ? "text-muted-foreground/20" : "text-primary dark:text-blue-400")} />
-                        {feature.text}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-                <div className="p-8 pt-0 mt-auto">
-                  <Button asChild variant="outline" className="w-full h-12 font-black rounded-xl border-2 uppercase text-xs">
-                    <Link to="/register">Get Started</Link>
-                  </Button>
-                </div>
-              </Card>
-
-              {/* Pro Tier */}
-              <Card className="border-primary dark:border-blue-500/50 shadow-2xl relative overflow-hidden bg-background flex flex-col lg:scale-105 z-10">
-                <div className="absolute top-0 right-0 p-4">
-                   <Badge className="bg-primary dark:bg-blue-600 text-primary-foreground font-black px-4 py-1 border-none shadow-lg">POPULAR</Badge>
-                </div>
-                <CardHeader className="p-8 pb-4">
-                  <CardTitle className="text-2xl font-black tracking-tighter uppercase text-primary dark:text-blue-400">Pro</CardTitle>
-                  <div className="pt-4 flex items-baseline gap-1 text-foreground">
-                    <span className="text-5xl font-black tracking-tighter">₹199</span>
-                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Month</span>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-8 pt-0 space-y-8 flex-1">
-                  <Separator className="opacity-50" />
-                  <ul className="space-y-4 pt-4">
-                    {[
-                      "15 Study Resources",
-                      "300 AI Questions / mo",
-                      "15 Sample Papers / mo",
-                      "Instant PDF Downloads",
-                      "Priority Support",
-                    ].map((feature, i) => (
-                      <li key={i} className="flex items-center gap-3 text-sm font-bold tracking-tight text-foreground/90">
-                        <CheckCircle2 className="size-5 shrink-0 text-primary dark:text-blue-400" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-                <div className="p-8 pt-0 mt-auto">
-                   <Button asChild className="w-full h-12 font-black rounded-xl bg-primary dark:bg-blue-600 text-primary-foreground hover:bg-primary/90 dark:hover:bg-blue-700 uppercase shadow-xl text-xs">
-                    <Link to="/register">Upgrade to Pro</Link>
-                  </Button>
-                </div>
-              </Card>
-
-              {/* Elite Tier */}
-              <Card className="border-border/50 shadow-sm relative overflow-hidden bg-background flex flex-col transition-all hover:border-primary/20">
-                <CardHeader className="p-8 pb-4">
-                  <CardTitle className="text-2xl font-black tracking-tighter uppercase text-foreground">Elite</CardTitle>
-                  <div className="pt-4 flex items-baseline gap-1 text-foreground">
-                    <span className="text-5xl font-black tracking-tighter">₹499</span>
-                    <span className="text-muted-foreground font-bold uppercase tracking-widest text-xs">/ Month</span>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-8 pt-0 space-y-8 flex-1">
-                  <Separator className="opacity-50" />
-                  <ul className="space-y-4 pt-4">
-                    {[
-                      "Unlimited Resources",
-                      "Unlimited AI Questions",
-                      "Unlimited Sample Papers",
-                      "Advanced Analytics",
-                      "24/7 Priority Support",
-                    ].map((feature, i) => (
-                      <li key={i} className="flex items-center gap-3 text-sm font-bold tracking-tight text-foreground/80">
-                        <CheckCircle2 className="size-5 shrink-0 text-primary dark:text-blue-400" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-                <div className="p-8 pt-0 mt-auto">
-                  <Button asChild variant="outline" className="w-full h-12 font-black rounded-xl border-2 uppercase text-xs">
-                    <Link to="/register">Go Elite</Link>
-                  </Button>
-                </div>
-              </Card>
-            </div>
+      {/* Pricing Section */}
+      <section id="pricing" className="py-24 bg-muted/30">
+        <div className="container mx-auto px-6">
+          <div className="text-center space-y-4 mb-16">
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight">Simple pricing for better grades</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Choose the plan that fits your study needs.</p>
           </div>
-        </section>
 
-        {/* --- FAQ --- */}
-        <section id="faq" className="py-24">
-          <div className="max-w-3xl mx-auto px-4 md:px-8 space-y-16">
-            <div className="text-center space-y-4">
-               <h2 className="text-4xl md:text-6xl font-black tracking-tight uppercase">Questions?</h2>
-               <p className="text-muted-foreground font-medium text-lg">Everything you need to know about PrepAI.</p>
-            </div>
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Free Tier */}
+            <Card className="p-8 rounded-[2rem] border border-border bg-background shadow-sm flex flex-col hover:shadow-md transition-shadow relative">
+              <div className="mb-8">
+                <h3 className="text-xl font-bold mb-2 text-muted-foreground">Free</h3>
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-4xl font-black">₹0</span>
+                  <span className="text-muted-foreground font-bold">/ forever</span>
+                </div>
+                <p className="text-muted-foreground text-sm font-medium leading-relaxed">Perfect for students just getting started with AI-assisted study.</p>
+              </div>
 
-            <div className="space-y-4">
-              {[
-                { q: "Is PrepAI actually free?", a: "Yes! Our free tier is genuinely useful for students. You get 30 questions and 3 paper generations every single month at no cost." },
-                { q: "What files can I upload?", a: "Currently, we support high-quality PDF extraction and plain text files. Our AI is optimized for academic documents like textbooks, lecture notes, and syllabi." },
-                { q: "How accurate is the AI Tutor?", a: "Extremely accurate. Unlike general AI, PrepAI is 'grounded'—it only uses the context you provide. At the end of every answer, it cites exactly which part of your notes it used." },
-                { q: "Can I cancel my subscription?", a: "Of course. You can cancel your Elite plan anytime from your account settings with one click. No hidden contracts." },
-              ].map((faq, i) => <FAQItem key={i} question={faq.q} answer={faq.a} />)}
-            </div>
-          </div>
-        </section>
+              <div className="space-y-4 mb-8 flex-grow">
+                {[
+                  "3 Resources stored",
+                  "30 AI questions / month",
+                  "3 Sample Papers / month",
+                  "PDF Downloads",
+                  "Smart Format Detection",
+                  "Standard response speed"
+                ].map((f, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <CheckCircle2 className="size-4 text-green-500 shrink-0" />
+                    <span className="text-sm font-bold">{f}</span>
+                  </div>
+                ))}
+              </div>
 
-        {/* --- BOTTOM CTA --- */}
-        <section className="py-24 px-4">
-           <div className="max-w-5xl mx-auto bg-primary dark:bg-blue-600 rounded-[3rem] p-12 md:p-24 text-center text-primary-foreground space-y-8 relative overflow-hidden shadow-2xl shadow-primary/20">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+              <Button asChild variant="outline" className="w-full h-12 rounded-full font-bold">
+                <Link to="/register">Get Started</Link>
+              </Button>
+            </Card>
+
+            {/* Pro Tier (Limited) */}
+            <Card className="p-8 rounded-[2rem] border-2 border-primary bg-background shadow-2xl relative flex flex-col scale-105 z-10 overflow-visible">
+              {/* Fixed Popular Ribbon */}
+              <div className="absolute top-0 right-0 w-32 h-32 overflow-hidden rounded-tr-[2rem] pointer-events-none">
+                <div className="absolute top-6 -right-8 w-40 bg-primary text-white text-[10px] font-black py-1 rotate-45 uppercase tracking-widest text-center shadow-sm">
+                  Popular
+                </div>
+              </div>
               
-              <h2 className="text-4xl md:text-7xl font-black tracking-tighter uppercase leading-[0.9]">Ready to Ace <br />Your Exams?</h2>
-              <p className="max-w-xl mx-auto text-primary-foreground/80 font-bold text-lg">Join thousands of students using AI to study smarter, not harder.</p>
-              <div className="pt-4">
-                 <Button asChild size="lg" className="h-16 px-12 rounded-2xl text-xl font-black bg-background text-primary hover:bg-background/90 dark:text-blue-600 uppercase shadow-2xl">
-                    <Link to="/register">Get Started Free</Link>
-                 </Button>
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-2">
+                   <h3 className="text-xl font-bold">Pro</h3>
+                   <Badge className="bg-primary/10 text-primary border-none text-[10px] font-black px-2 h-5">BEST VALUE</Badge>
+                </div>
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-4xl font-black">₹499</span>
+                  <span className="text-muted-foreground font-bold">/ month</span>
+                </div>
+                <p className="text-muted-foreground text-sm font-medium leading-relaxed">For serious students who want more power in their preparation.</p>
+              </div>
+
+              <div className="space-y-4 mb-8 flex-grow">
+                {[
+                  "20 Resources stored",
+                  "100 AI questions / month",
+                  "10 Sample Papers / month",
+                  "Everything in Free",
+                  "Priority AI Model Access",
+                  "Ad-free Experience"
+                ].map((f, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <CheckCircle2 className="size-4 text-primary shrink-0" />
+                    <span className="text-sm font-bold">{f}</span>
+                  </div>
+                ))}
+              </div>
+
+              <Button asChild className="w-full h-12 rounded-full font-bold shadow-lg shadow-primary/25">
+                <Link to="/register">Go Pro Now</Link>
+              </Button>
+            </Card>
+
+            {/* Elite Tier (Unlimited) */}
+            <Card className="p-8 rounded-[2rem] border border-border bg-background shadow-sm flex flex-col hover:shadow-md transition-shadow">
+              <div className="mb-8">
+                <h3 className="text-xl font-bold mb-2 text-purple-600">Elite</h3>
+                <div className="flex items-baseline gap-1 mb-4">
+                  <span className="text-4xl font-black">₹999</span>
+                  <span className="text-muted-foreground font-bold">/ month</span>
+                </div>
+                <p className="text-muted-foreground text-sm font-medium leading-relaxed">The ultimate toolkit for top rankers and exam board preparation.</p>
+              </div>
+
+              <div className="space-y-4 mb-8 flex-grow">
+                {[
+                  "Unlimited Resources",
+                  "Unlimited AI questions",
+                  "Unlimited Sample Papers",
+                  "Everything in Pro",
+                  "Advanced Case Study AI",
+                  "Early Access to Features",
+                  "Personalized Exam Strategy"
+                ].map((f, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <CheckCircle2 className="size-4 text-purple-500 shrink-0" />
+                    <span className="text-sm font-bold">{f}</span>
+                  </div>
+                ))}
+              </div>
+
+              <Button asChild variant="outline" className="w-full h-12 rounded-full font-bold border-purple-200 hover:bg-purple-50 text-purple-700">
+                <Link to="/register">Go Elite</Link>
+              </Button>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-24">
+        <div className="container mx-auto px-6">
+           <div className="bg-primary rounded-[3rem] p-12 md:p-20 text-center text-white relative overflow-hidden group">
+              <div className="absolute top-0 right-0 -z-0 opacity-10 group-hover:scale-110 transition-transform duration-[2000ms]">
+                 <BrainCircuit className="size-[500px]" />
+              </div>
+              <div className="relative z-10 space-y-8">
+                 <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-tight">Ready to transform<br />your study routine?</h2>
+                 <p className="text-xl text-white/80 font-medium max-w-2xl mx-auto">Join thousands of students who are already using PrepAI to get better grades in less time.</p>
+                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button asChild size="lg" className="h-16 px-10 text-xl font-black rounded-full bg-white text-primary hover:bg-white/90">
+                       <Link to="/register">Join PrepAI Today</Link>
+                    </Button>
+                    <Button asChild variant="outline" size="lg" className="h-16 px-10 text-xl font-black rounded-full border-white/20 hover:bg-white/10 text-white">
+                       <Link to="/login">Sign In</Link>
+                    </Button>
+                 </div>
               </div>
            </div>
-        </section>
-      </main>
-
-      {/* --- FOOTER --- */}
-      <footer className="border-t py-12 bg-muted/20">
-         <div className="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-4 gap-12">
-            <div className="space-y-6 text-left">
-               <div className="flex items-center gap-2">
-                  <div className="bg-primary size-7 rounded-lg flex items-center justify-center">
-                    <Zap className="size-4 text-primary-foreground fill-current" />
-                  </div>
-                  <span className="font-black text-xl tracking-tighter uppercase">PrepAI</span>
-               </div>
-               <p className="text-muted-foreground text-sm font-medium">The intelligent academic assistant for the modern student.</p>
-               <div className="flex gap-4">
-                  <Zap className="size-5 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
-                  <MessageSquare className="size-5 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
-                  <FileText className="size-5 text-muted-foreground hover:text-primary cursor-pointer transition-colors" />
-               </div>
-            </div>
-            
-            <div className="text-left">
-               <h4 className="font-black uppercase tracking-widest text-xs mb-6">Product</h4>
-               <ul className="space-y-4 text-sm font-bold text-muted-foreground">
-                  <li className="hover:text-primary cursor-pointer" onClick={() => scrollToSection('features')}>Features</li>
-                  <li className="hover:text-primary cursor-pointer" onClick={() => scrollToSection('pricing')}>Pricing</li>
-                  <li className="hover:text-primary cursor-pointer" onClick={() => scrollToSection('how-it-works')}>How it Works</li>
-               </ul>
-            </div>
-
-            <div className="text-left">
-               <h4 className="font-black uppercase tracking-widest text-xs mb-6">Legal</h4>
-               <ul className="space-y-4 text-sm font-bold text-muted-foreground">
-                  <li className="hover:text-primary cursor-pointer">Terms of Service</li>
-                  <li className="hover:text-primary cursor-pointer">Privacy Policy</li>
-                  <li className="hover:text-primary cursor-pointer">Cookie Policy</li>
-               </ul>
-            </div>
-
-            <div className="text-left">
-               <h4 className="font-black uppercase tracking-widest text-xs mb-6">Support</h4>
-               <p className="text-sm font-bold text-muted-foreground">support@prepai.co</p>
-               <p className="text-xs text-muted-foreground/60 mt-2 font-medium">Available 24/7 for our students.</p>
-            </div>
-         </div>
-         <div className="max-w-7xl mx-auto px-4 md:px-8 mt-12 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">© 2026 PrepAI. Made with ❤️ for Students.</p>
-            <div className="flex gap-6 text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-               <span>Status: Operational</span>
-               <span>v0.1 MVP</span>
-            </div>
-         </div>
-      </footer>
-    </div>
-  );
-}
-
-function FAQItem({ question, answer }: { question: string, answer: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-  
-  return (
-    <div className="border rounded-2xl bg-background overflow-hidden transition-all duration-300 shadow-sm hover:shadow-md">
-      <button 
-        className="w-full p-6 text-left flex items-center justify-between group"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <span className="font-black text-lg tracking-tight group-hover:text-primary transition-colors text-foreground">{question}</span>
-        <ChevronDown className={cn("size-5 text-muted-foreground transition-transform duration-300", isOpen && "rotate-180")} />
-      </button>
-      <div 
-        className={cn(
-          "overflow-hidden transition-all duration-300 ease-in-out",
-          isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-        )}
-      >
-        <div className="p-6 pt-0 text-muted-foreground font-medium border-t border-muted/10 mt-2 leading-relaxed text-sm">
-          {answer}
         </div>
-      </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 border-t border-border">
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-12">
+            <div className="col-span-2 space-y-6">
+              <Link to="/" className="flex items-center gap-2">
+                <div className="bg-primary p-1.5 rounded-lg">
+                  <GraduationCap className="size-6 text-white" />
+                </div>
+                <span className="text-2xl font-black tracking-tighter">Prep<span className="text-primary">AI</span></span>
+              </Link>
+              <p className="text-muted-foreground font-medium max-w-xs leading-relaxed">
+                Empowering students with AI-driven preparation tools. Stop guessing, start acing.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <h4 className="font-black text-sm uppercase tracking-widest">Product</h4>
+              <ul className="space-y-2">
+                <li><a href="#features" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Features</a></li>
+                <li><a href="#pricing" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Pricing</a></li>
+                <li><Link to="/solver" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">AI Solver</Link></li>
+                <li><Link to="/generator" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Mock Exams</Link></li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <h4 className="font-black text-sm uppercase tracking-widest">Company</h4>
+              <ul className="space-y-2">
+                <li><a href="#" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">About Us</a></li>
+                <li><a href="#" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Contact</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">© 2026 PrepAI. All rights reserved.</p>
+            <div className="flex gap-6">
+               <div className="size-8 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer">
+                  <span className="sr-only">Twitter</span>
+                  <svg className="size-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.84 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
+               </div>
+               <div className="size-8 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer">
+                  <span className="sr-only">GitHub</span>
+                  <svg className="size-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+               </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
