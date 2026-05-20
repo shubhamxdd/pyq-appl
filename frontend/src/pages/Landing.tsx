@@ -30,7 +30,6 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
-import heroImage from '@/assets/hero.png';
 
 export default function Landing() {
   const token = useAuthStore((state) => state.token);
@@ -267,21 +266,12 @@ export default function Landing() {
                 <div className="ml-4 h-5 w-48 bg-background/50 rounded-full" />
               </div>
               <img 
-                src={heroImage} 
+                src={isDark ? "/dashboard-dark.png" : "/dashboard-light.png"} 
                 alt="PrepAI Dashboard" 
                 className="w-full h-auto object-cover"
               />
             </div>
-            {/* Floating Element */}
-            <div className="absolute -bottom-6 -left-6 md:-left-12 p-6 bg-background border border-border rounded-2xl shadow-xl animate-in zoom-in duration-700 delay-300 max-w-[200px]">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="size-8 bg-green-500/10 rounded-lg flex items-center justify-center">
-                  <Sparkles className="size-4 text-green-600" />
-                </div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">AI Power</p>
-              </div>
-              <p className="text-xs font-bold">100% Curriculum Accuracy Verified</p>
-            </div>
+            
           </div>
         </div>
       </section>
