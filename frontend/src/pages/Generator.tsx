@@ -521,7 +521,7 @@ export default function Generator() {
                                 </div>
                                 
                                 {editingPaperId !== paper.id && (
-                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
@@ -533,7 +533,7 @@ export default function Generator() {
                                         <Button 
                                             variant="ghost" 
                                             size="icon" 
-                                            className="size-7 text-muted-foreground hover:text-destructive"
+                                            className="size-7 text-muted-foreground hover:text-destructive mx-1"
                                             onClick={() => { 
                                                 if(window.confirm('Delete this paper?')) deletePaperMutation.mutate(paper.id); 
                                             }}
@@ -563,8 +563,34 @@ export default function Generator() {
                     {activePaper && (
                         <Card className="border-border/50 shadow-sm overflow-hidden bg-card text-card-foreground">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-muted/20 pb-4">
-                                <div className="space-y-1">
-                                    <CardTitle className="text-2xl font-bold">{activePaper.title}</CardTitle>
+                                <div className="space-y-1 flex-1 min-w-0">
+                                    {editingPaperId === activePaper.id ? (
+                                        <div className="max-w-md">
+                                            <Input 
+                                                className="h-9 text-lg font-bold focus-visible:ring-primary rounded-xl"
+                                                value={newPaperTitle}
+                                                onChange={(e) => setNewPaperTitle(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') handleRenamePaper(activePaper.id);
+                                                    if (e.key === 'Escape') setEditingPaperId(null);
+                                                }}
+                                                onBlur={() => setEditingPaperId(null)}
+                                                autoFocus
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <CardTitle className="text-2xl font-bold truncate">{activePaper.title}</CardTitle>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="size-8 text-muted-foreground hover:text-primary shrink-0 md:hidden"
+                                                onClick={() => startRenamingPaper(activePaper.id, activePaper.title)}
+                                            >
+                                                <Edit2 className="size-3.5" />
+                                            </Button>
+                                        </div>
+                                    )}
                                     <div className="flex items-center gap-4">
                                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                             <Badge variant="outline" className="text-[10px] uppercase font-bold">

@@ -303,13 +303,13 @@ export default function Solver() {
             </div>
           ) : (
             sessions?.map(sess => (
-              <div key={sess.id} className="group relative">
+              <div key={sess.id} className="group relative flex items-center pr-1 md:pr-0">
                 {editingSessionId === sess.id ? (
-                  <div className="px-2 py-1">
+                  <div className="px-2 py-1 flex-1 min-w-0">
                     <Input
                       value={newSessionTitle}
                       onChange={(e) => setNewSessionTitle(e.target.value)}
-                      className="h-9 text-xs focus-visible:ring-primary rounded-lg pr-8"
+                      className="h-9 text-xs focus-visible:ring-primary rounded-lg"
                       autoFocus
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleRenameSession(sess.id);
@@ -321,19 +321,19 @@ export default function Solver() {
                   <button
                     onClick={() => handleSelectSession(sess.id)}
                     className={cn(
-                      "w-full text-left px-3 py-3 rounded-xl text-sm transition-all flex items-center gap-3",
+                      "flex-1 min-w-0 text-left px-3 py-3 rounded-xl text-sm transition-all flex items-center gap-3",
                       activeSessionId === sess.id
                         ? "bg-primary/10 text-primary font-semibold"
                         : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     )}
                   >
                     <MessageSquare className={cn("size-4 flex-shrink-0", activeSessionId === sess.id ? "opacity-100" : "opacity-40")} />
-                    <span className="truncate pr-8">{sess.title}</span>
+                    <span className="truncate">{sess.title}</span>
                   </button>
                 )}
                 
                 {editingSessionId !== sess.id && (
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-0.5 shrink-0 opacity-100 md:absolute md:right-2 md:top-1/2 md:-translate-y-1/2 md:opacity-0 md:group-hover:opacity-100 transition-opacity bg-background md:bg-card">
                     <Button 
                       variant="ghost" 
                       size="icon" 
@@ -563,7 +563,7 @@ export default function Solver() {
       <div className="flex-1 flex flex-col min-w-0 bg-card border rounded-2xl overflow-hidden shadow-sm relative">
         {/* Chat Header */}
         <div className="h-14 md:h-16 border-b flex items-center justify-between px-4 md:px-6 bg-card sticky top-0 z-10">
-          <div className="flex items-center gap-2 md:gap-4 min-w-0">
+          <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
             {/* Mobile History Trigger */}
             <Sheet>
               <SheetTrigger asChild>
@@ -582,9 +582,54 @@ export default function Solver() {
             <div className="bg-primary/10 p-2 rounded-lg hidden xs:flex">
               <Zap className="size-4 md:size-5 text-primary" />
             </div>
-            <h2 className="font-bold text-sm md:text-lg truncate">
-              {activeSessionId ? sessions?.find(s => s.id === activeSessionId)?.title : 'New Chat'}
-            </h2>
+
+            {activeSessionId && editingSessionId === activeSessionId ? (
+               <div className="flex-1 max-w-[200px] md:max-w-none">
+                 <Input
+                    value={newSessionTitle}
+                    onChange={(e) => setNewSessionTitle(e.target.value)}
+                    className="h-9 text-sm focus-visible:ring-primary rounded-xl"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleRenameSession(activeSessionId);
+                      if (e.key === 'Escape') setEditingSessionId(null);
+                    }}
+                    onBlur={() => setEditingSessionId(null)}
+                 />
+               </div>
+            ) : (
+              <div className="flex items-center gap-2 min-w-0">
+                <h2 className="font-bold text-sm md:text-lg truncate">
+                  {activeSessionId ? sessions?.find(s => s.id === activeSessionId)?.title : 'New Chat'}
+                </h2>
+                {activeSessionId && (
+                  <div className="flex items-center md:hidden">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="size-8 text-muted-foreground hover:text-primary shrink-0"
+                      onClick={() => {
+                        const sess = sessions?.find(s => s.id === activeSessionId);
+                        if (sess) startRenamingSession(sess.id, sess.title);
+                      }}
+                    >
+                      <Edit2 className="size-3.5" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="size-8 text-muted-foreground hover:text-destructive shrink-0"
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        if(window.confirm('Delete this conversation?')) deleteSessionMutation.mutate(activeSessionId); 
+                      }}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           <div className="flex items-center gap-1 md:gap-2">
