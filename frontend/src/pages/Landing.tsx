@@ -42,7 +42,7 @@ export default function Landing() {
     // Check initial theme
     const storedTheme = localStorage.getItem('theme');
     const isDarkTheme =  storedTheme === 'dark' || (storedTheme === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                       (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    setIsDark(isDarkTheme);
     setIsDark(isDarkTheme);
     if (isDarkTheme) {
       document.documentElement.classList.add('dark');
