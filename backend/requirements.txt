@@ -20,4 +20,3 @@ pypdfium2
 pillow
 email-validator
 posthog
-posthog

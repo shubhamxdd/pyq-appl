@@ -10,6 +10,12 @@
 
 ## Completed
 
+- **Sprint 7: Phase 4 (Analytics & Growth)**:
+    - **PostHog Integration**: Full-stack analytics pipeline implemented across React and FastAPI.
+    - **Granular Event Tracking**: Instrumented high-value actions including resource uploads, AI questions, paper generations, and PDF exports.
+    - **Conversion Funnel instrumentation**: Added behavioral tracking to Landing Page sections, FAQ interactions, and Pricing buttons.
+    - **Revenue Insight**: Instrumented `UpgradeModal` to track intent vs. hesitation on paywall hits.
+    - **Robust Backend Implementation**: Resolved circular imports and implemented a dedicated `analytics.py` module with debug mode and string-ID formatting.
 - **Sprint 7: Phase 3 (Marketing & Identity)**:
     - **PrepAI Landing Page**: Fully implemented as a high-converting single-page layout at `/`. 
     - Replicated professional Hero section and "Meet the two superpowers" from HTML template.
@@ -23,6 +29,8 @@
     - **LLM Resilience**: Implemented exponential backoff retries (2s, 4s, 8s) in `OpenRouterClient` for all API calls.
     - **Production Deployment**: VPS updated and live with unified Docker setup behind system Nginx reverse proxy.
 - **Sprint 7: Phase 1 (UI/UX & Onboarding)**:
+    - **Solver & Generator Mobile UX**: Added Rename and Delete buttons to sidebar items and chat/paper headers on mobile for easier session management.
+    - **Inline Header Renaming**: Implemented a seamless renaming flow directly in both Solver and Generator headers.
     - Implemented `PublicRoute` to redirect authenticated users away from login/register.
     - Added dismissible `WelcomeBanner` on the Dashboard for new user guidance.
     - Created `UpgradeModal` and integrated it into Solver, Generator, and Resources for quota limit handling.
@@ -53,6 +61,6 @@
 
 ## Session Notes
 
-- Sprint 7: Marketing & Identity phase complete. Landing page is live and fully polished.
+- Sprint 7: Analytics & Growth phase complete. Full-stack PostHog integration is live with granular behavioral tracking.
 - App architecture is now clearly separated between public marketing and private dashboard.
-- Future focus shifted towards core AI performance (RAG) and monetization.
+- Future focus shifted towards core AI performance (RAG) and monetization (Razorpay).
