@@ -248,4 +248,4 @@ async def ask_question(
                     answer_rec.status = "failed"
                     await async_db.commit()
 
-    return StreamingResponse(event_generator(), media_type="text_event-stream")
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
