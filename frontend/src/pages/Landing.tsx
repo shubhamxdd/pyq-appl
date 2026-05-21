@@ -81,13 +81,6 @@ export default function Landing() {
     };
     window.addEventListener('scroll', handleScroll);
 
-    // Intersection Observer to update URL on scroll
-    const observerOptions = {
-      root: null,
-      rootMargin: '-10% 0px -80% 0px',
-      threshold: 0
-    };
-
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
       // Find the first entry that is intersecting
       const intersectingEntry = entries.find(entry => entry.isIntersecting);
