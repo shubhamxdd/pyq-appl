@@ -872,7 +872,7 @@ export default function Landing() {
             <div className="flex gap-6">
                <Link to="https://shubhamxd.in" target='_blank'>
                 <div className="size-8 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer">
-                    <span className="sr-only">Twitter</span>
+                    <span className="sr-only">Personal Site</span>
                     <SquareUserRound />
                 </div>
                </Link>
