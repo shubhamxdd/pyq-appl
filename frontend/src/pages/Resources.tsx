@@ -56,6 +56,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { UpgradeModal } from '../components/UpgradeModal';
+import { trackEvent } from '../lib/analytics';
 
 export default function Resources() {
   const queryClient = useQueryClient();
@@ -89,11 +90,13 @@ export default function Resources() {
       queryClient.invalidateQueries({ queryKey: ['resources'] });
       setFile(null);
       toast.success('File uploaded successfully!');
+      trackEvent('resource_upload_clicked', { type });
     },
     onError: (error: any) => {
       if (error.response?.status === 403) {
         setUpgradeMessage(error.response?.data?.detail || "You've reached your resource storage limit.");
         setIsUpgradeModalOpen(true);
+        trackEvent('limit_reached_modal_viewed', { feature: 'resources', message: upgradeMessage });
       } else {
         const message = error.response?.data?.detail || 'Failed to upload file.';
         toast.error(message);

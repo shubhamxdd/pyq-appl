@@ -29,6 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { trackEvent } from '@/lib/analytics';
 
 export default function Landing() {
   const token = useAuthStore((state) => state.token);
@@ -39,6 +40,9 @@ export default function Landing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
+    // Analytics
+    trackEvent('landing_page_viewed');
+
     // Check initial theme
     const storedTheme = localStorage.getItem('theme');
     const isDarkTheme =  storedTheme === 'dark' || (storedTheme === null && window.matchMedia('(prefers-color-scheme: dark)').matches);

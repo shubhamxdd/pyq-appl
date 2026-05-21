@@ -43,6 +43,7 @@ import {
 } from "lucide-react"
 import { cn } from './lib/utils';
 import { WelcomeBanner } from './components/WelcomeBanner';
+import { trackEvent } from './lib/analytics';
 
 const queryClient = new QueryClient();
 
@@ -81,6 +82,7 @@ function Dashboard() {
         email: user.email,
         plan: user.plan,
       });
+      trackEvent('dashboard_viewed');
     }
   }, [user, token, setAuth]);
 
