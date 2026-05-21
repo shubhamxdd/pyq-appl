@@ -17,6 +17,7 @@ import api from './api/auth';
 import { resourcesApi } from './api/resources';
 import { papersApi } from './api/papers';
 import { useEffect } from 'react';
+import posthog from 'posthog-js';
 
 import { TooltipProvider } from "@/components/ui/tooltip"
 import {
@@ -42,6 +43,7 @@ import {
 } from "lucide-react"
 import { cn } from './lib/utils';
 import { WelcomeBanner } from './components/WelcomeBanner';
+import { trackEvent } from './lib/analytics';
 
 const queryClient = new QueryClient();
 
@@ -76,6 +78,11 @@ function Dashboard() {
   useEffect(() => {
     if (user && token) {
       setAuth(user, token);
+      posthog.identify(user.id, {
+        email: user.email,
+        plan: user.plan,
+      });
+      trackEvent('dashboard_viewed');
     }
   }, [user, token, setAuth]);
 

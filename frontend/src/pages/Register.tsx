@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Zap, Loader2 } from "lucide-react"
+import { trackEvent } from '@/lib/analytics';
 
 const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -53,6 +54,7 @@ export default function Register() {
         email: data.email,
         password: data.password,
       });
+      trackEvent('registration_success', { email: data.email });
       navigate('/login');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Registration failed. Please try again.');

@@ -10,6 +10,7 @@ from ..models.resource import Resource
 from ..schemas.resource import ResourceOut, ResourceUpdate
 from ..routers.auth import get_current_user
 from ..services.storage import storage_service
+from ..analytics import ph_client
 from arq import create_pool
 from ..config import settings
 from arq.connections import RedisSettings
@@ -93,6 +94,13 @@ async def upload_resource(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to upload file to storage"
         )
+    
+    ph_client.capture("resource_upload_started", distinct_id=str(current_user.id), properties={
+        "filename": file.filename,
+        "content_type": file.content_type,
+        "size_mb": total_size / (1024 * 1024),
+        "type": type
+    })
     
     try:
         # Create DB record (not committed yet)
@@ -187,6 +195,8 @@ async def delete_resource(
     await db.delete(resource)
     await db.commit()
     
+    ph_client.capture("resource_deleted", distinct_id=str(current_user.id), properties={"resource_id": str(resource_id)})
+    
     return {"message": "Resource deleted successfully"}
 
 @router.patch("/{resource_id}", response_model=ResourceOut)
@@ -246,6 +256,8 @@ async def retry_extraction(
         # Only commit if enqueue was successful
         await db.commit()
         await db.refresh(resource)
+        
+        ph_client.capture("resource_retry_extraction", distinct_id=str(current_user.id), properties={"resource_id": str(resource_id)})
     except Exception as e:
         await db.rollback()
         raise HTTPException(
@@ -278,5 +290,6 @@ async def stop_processing(
         resource.status = "failed"
         await db.commit()
         await db.refresh(resource)
+        ph_client.capture("resource_stop_processing", distinct_id=str(current_user.id), properties={"resource_id": str(resource_id)})
     
     return resource

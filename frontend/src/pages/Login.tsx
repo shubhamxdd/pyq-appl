@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Zap, Loader2 } from "lucide-react"
+import { identifyUser, trackEvent } from '@/lib/analytics';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -55,6 +56,14 @@ export default function Login() {
       });
       
       setAuth(userResponse.data, access_token);
+      
+      // Analytics
+      identifyUser(userResponse.data.id, {
+        email: userResponse.data.email,
+        plan: userResponse.data.plan
+      });
+      trackEvent('login_success', { method: 'password' });
+      
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');

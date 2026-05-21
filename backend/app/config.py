@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     QUESTIONS_LIMIT: int = 30
     PAPERS_LIMIT: int = 3
     RESOURCES_LIMIT: int = 3
+    
+    # PostHog Settings
+    POSTHOG_API_KEY: str = ""
+    POSTHOG_HOST: str = "https://us.i.posthog.com"
+    
     class Config:
         env_file = ".env"
 

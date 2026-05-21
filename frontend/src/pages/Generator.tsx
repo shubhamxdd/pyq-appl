@@ -50,6 +50,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from 'react-hot-toast';
 import api from '@/api/auth';
 import { UpgradeModal } from '../components/UpgradeModal';
+import { trackEvent } from '@/lib/analytics';
 
 export default function Generator() {
   const queryClient = useQueryClient();
@@ -148,12 +149,14 @@ export default function Generator() {
       setFormatConfig(null);
       navigate(`/generator/${newPaper.id}`);
       toast.success('Paper generation started!');
+      trackEvent('paper_generation_clicked', { title });
     },
     onError: (error: any) => {
       if (error.response?.status === 403) {
         setUpgradeMessage(error.response?.data?.detail || "You've reached your monthly paper limit.");
         setIsUpgradeModalOpen(true);
         setIsCreateOpen(false);
+        trackEvent('limit_reached_modal_viewed', { feature: 'generator', message: upgradeMessage });
       } else {
         toast.error(error.response?.data?.detail || 'Failed to create paper.');
       }

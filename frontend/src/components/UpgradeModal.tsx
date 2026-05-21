@@ -8,6 +8,7 @@ import {
 } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { CheckCircle2, Zap, FileText, FileEdit, Crown } from "lucide-react";
+import { trackEvent } from "../lib/analytics";
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -67,6 +68,10 @@ export function UpgradeModal({ isOpen, onClose, message }: UpgradeModalProps) {
           <Button 
             className="w-full h-12 text-base font-bold shadow-lg shadow-primary/20"
             onClick={() => {
+              trackEvent('upgrade_button_clicked', { 
+                source: message ? 'limit_reached' : 'manual',
+                message: message || 'default'
+              });
               // Future: Redirect to checkout or open Razorpay
               console.log("Redirecting to payment...");
               onClose();
@@ -74,7 +79,10 @@ export function UpgradeModal({ isOpen, onClose, message }: UpgradeModalProps) {
           >
             Upgrade Now — $9/mo
           </Button>
-          <Button variant="ghost" onClick={onClose} className="w-full font-semibold">
+          <Button variant="ghost" onClick={() => {
+            trackEvent('upgrade_modal_dismissed', { source: message ? 'limit_reached' : 'manual' });
+            onClose();
+          }} className="w-full font-semibold">
             Maybe Later
           </Button>
         </DialogFooter>
