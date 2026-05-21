@@ -11,7 +11,7 @@ services:
     depends_on:
       - postgres
       - redis
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   postgres:
     image: postgres:15-alpine
@@ -63,6 +63,8 @@ services:
       context: ./frontend
       args:
         - VITE_API_URL=${VITE_API_URL}
+        - VITE_POSTHOG_KEY=${VITE_POSTHOG_KEY}
+        - VITE_POSTHOG_HOST=${VITE_POSTHOG_HOST}
     container_name: pyq_frontend
     ports:
       - "80:80"
