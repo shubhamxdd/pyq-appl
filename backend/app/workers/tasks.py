@@ -8,6 +8,7 @@ from ..database import SessionLocal
 from ..models.resource import Resource
 from ..config import settings
 from ..services.storage import storage_service
+from ..analytics import ph_client
 import httpx
 import pypdfium2 as pdfium
 from PIL import Image
@@ -165,6 +166,14 @@ async def extraction_task(ctx, resource_id: str, job_id: str = None):
                     
                 print(f"💾 [STEP 3/3] Saving extracted text to DB...")
                 await db.commit()
+                
+                ph_client.capture("resource_processed", distinct_id=str(resource.user_id), properties={
+                    "resource_id": str(resource_id),
+                    "filename": resource.filename,
+                    "num_pages": num_pages,
+                    "type": resource.type
+                })
+                
                 print(f"🏁 [TASK COMPLETE] Resource {resource_id} is now READY.\n")
             
             elif resource.filename.lower().endswith('.txt'):
@@ -180,6 +189,13 @@ async def extraction_task(ctx, resource_id: str, job_id: str = None):
                     job.completed_at = datetime.utcnow()
                     
                 await db.commit()
+                
+                ph_client.capture("resource_processed", distinct_id=str(resource.user_id), properties={
+                    "resource_id": str(resource_id),
+                    "filename": resource.filename,
+                    "type": resource.type
+                })
+                
                 print("🏁 [TASK COMPLETE] Text file is READY.\n")
             
             else:
@@ -217,6 +233,12 @@ async def extraction_task(ctx, resource_id: str, job_id: str = None):
                             j.completed_at = datetime.utcnow()
                             
                     await err_db.commit()
+                    
+                    ph_client.capture("resource_processing_failed", distinct_id=str(res_to_fail.user_id), properties={
+                        "resource_id": str(resource_id),
+                        "error": str(e)
+                    })
+                    
                     print(f"📉 [DB] Resource {resource_id} marked as FAILED.")
             except Exception as final_err:
                 print(f"💀 [FATAL] Could not even mark as failed: {final_err}")
@@ -359,6 +381,12 @@ async def generate_paper_task(ctx, paper_id: str, job_id: str = None):
                 job.completed_at = datetime.utcnow()
                 
             await db.commit()
+            
+            ph_client.capture("paper_generated", distinct_id=str(paper.user_id), properties={
+                "paper_id": str(paper_id),
+                "num_questions": len(questions)
+            })
+            
             print(f"🏁 [TASK COMPLETE] Paper {paper_id} is READY.\n")
 
         except Exception as e:
@@ -382,6 +410,12 @@ async def generate_paper_task(ctx, paper_id: str, job_id: str = None):
                             j.completed_at = datetime.utcnow()
                             
                     await err_db.commit()
+                    
+                    ph_client.capture("paper_generation_failed", distinct_id=str(paper_to_fail.user_id), properties={
+                        "paper_id": str(paper_id),
+                        "error": str(e)
+                    })
+                    
                     print(f"📉 [DB] Paper {paper_id} marked as FAILED.")
             except:
                 pass

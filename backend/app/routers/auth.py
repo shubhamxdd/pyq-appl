@@ -8,6 +8,7 @@ from ..models.user import User
 from ..schemas.user import UserCreate, UserLogin, UserOut, Token, TokenData, GoogleLogin
 from ..services.security import get_password_hash, verify_password, create_access_token
 from ..config import settings
+from ..analytics import ph_client
 import httpx
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -57,6 +58,9 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+    
+    ph_client.capture("user_registered", distinct_id=str(new_user.id), properties={"email": new_user.email, "method": "password"})
+    
     return new_user
 
 @router.post("/login", response_model=Token)
@@ -72,6 +76,7 @@ async def login(user_in: UserLogin, db: AsyncSession = Depends(get_db)):
         )
     
     access_token = create_access_token(subject=user.id)
+    ph_client.capture("user_logged_in", distinct_id=str(user.id), properties={"method": "password"})
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/google", response_model=Token)
@@ -110,6 +115,7 @@ async def google_login(data: GoogleLogin, db: AsyncSession = Depends(get_db)):
         db.add(user)
         await db.commit()
         await db.refresh(user)
+        ph_client.capture("user_registered", distinct_id=str(user.id), properties={"email": email, "method": "google"})
     elif not user.google_id:
         # Link existing email account to Google ID
         user.google_id = google_id
@@ -117,6 +123,7 @@ async def google_login(data: GoogleLogin, db: AsyncSession = Depends(get_db)):
         await db.refresh(user)
         
     access_token = create_access_token(subject=user.id)
+    ph_client.capture("user_logged_in", distinct_id=str(user.id), properties={"method": "google"})
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me", response_model=UserOut)

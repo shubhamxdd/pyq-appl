@@ -17,6 +17,7 @@ from ..routers.auth import get_current_user
 from ..llm.client import open_router_client
 from ..llm.prompts import SOLVER_SYSTEM, SOLVER_USER_TEMPLATE
 from ..config import settings
+from ..analytics import ph_client
 
 
 router = APIRouter(prefix="/solver", tags=["solver"])
@@ -32,6 +33,7 @@ async def create_session(
     db.add(new_session)
     await db.commit()
     await db.refresh(new_session)
+    ph_client.capture("chat_session_created", distinct_id=str(current_user.id), properties={"session_id": str(new_session.id)})
     return new_session
 
 @router.get("/sessions", response_model=List[ChatSessionOut])
@@ -209,6 +211,13 @@ async def ask_question(
     current_user.questions_used += 1
     await db.commit()
 
+    ph_client.capture("ai_question_asked", distinct_id=str(current_user.id), properties={
+        "session_id": str(session_id),
+        "num_resources": len(data.resource_ids),
+        "delivery_mode": data.delivery_mode,
+        "question_length": len(data.content)
+    })
+
     # 5. Prepare LLM Call
     messages = [
         {"role": "system", "content": SOLVER_SYSTEM},
@@ -239,4 +248,4 @@ async def ask_question(
                     answer_rec.status = "failed"
                     await async_db.commit()
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(event_generator(), media_type="text_event-stream")

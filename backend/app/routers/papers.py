@@ -24,6 +24,7 @@ from arq import create_pool
 from arq.connections import RedisSettings
 from ..services.pdf import generate_paper_pdf
 from ..services.storage import storage_service
+from ..analytics import ph_client
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,12 @@ async def detect_format(
             clean_json = clean_json[:-3]
         
         format_config = json.loads(clean_json)
+        
+        ph_client.capture("paper_format_detected", distinct_id=str(current_user.id), properties={
+            "resource_id": str(data.resource_id),
+            "format": format_config.get("format_name", "unknown")
+        })
+        
         return format_config
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to detect format: {str(e)}")
@@ -137,6 +144,12 @@ async def create_paper(
 
     await db.commit()
     await db.refresh(new_paper)
+    
+    ph_client.capture("paper_generation_started", distinct_id=str(current_user.id), properties={
+        "paper_id": str(new_paper.id),
+        "num_resources": len(data.resources),
+        "delivery_mode": data.delivery_mode
+    })
     
     from ..models.job import Job
     new_job = Job(
@@ -264,6 +277,8 @@ async def delete_paper(
     await db.delete(paper)
     await db.commit()
     
+    ph_client.capture("paper_deleted", distinct_id=str(current_user.id), properties={"paper_id": str(paper_id)})
+    
     return {"message": "Paper deleted successfully"}
 
 @router.get("/{paper_id}/output", response_model=PaperOutputOut)
@@ -382,5 +397,10 @@ async def get_paper_pdf_url(
         output.pdf_url = pdf_url
         
     await db.commit()
+
+    ph_client.capture("paper_pdf_downloaded", distinct_id=str(current_user.id), properties={
+        "paper_id": str(paper_id),
+        "mode": mode
+    })
 
     return {"url": pdf_url}

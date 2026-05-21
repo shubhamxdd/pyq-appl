@@ -2,14 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import auth, resources, solver, papers
 from .config import settings
-from posthog import Posthog
+from .analytics import ph_client
 
 app = FastAPI(title="PYQ Solver API")
-
-# Initialize PostHog
-ph_client = Posthog(settings.POSTHOG_API_KEY, host=settings.POSTHOG_HOST)
-if not settings.POSTHOG_API_KEY:
-    ph_client.disabled = True
 
 # Configure CORS
 app.add_middleware(
