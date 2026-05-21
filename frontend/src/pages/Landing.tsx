@@ -18,7 +18,8 @@ import {
   X,
   Sun,
   Moon,
-  ChevronDown
+  ChevronDown,
+  SquareUserRound
 } from 'lucide-react';
 import { 
   Card, 
@@ -39,7 +40,8 @@ export default function Landing() {
 
   useEffect(() => {
     // Check initial theme
-    const isDarkTheme = document.documentElement.classList.contains('dark') || 
+    const storedTheme = localStorage.getItem('theme');
+    const isDarkTheme =  storedTheme === 'dark' || (storedTheme === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
                        (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
     setIsDark(isDarkTheme);
     if (isDarkTheme) {
@@ -279,6 +281,9 @@ export default function Landing() {
               {isDark ? <Sun className="size-5 text-yellow-500" /> : <Moon className="size-5 text-slate-700" />}
             </button>
             <button 
+              aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={isMenuOpen}
+              aria-controls="mobile-nav-menu"
               className="p-2 text-foreground"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
@@ -289,7 +294,7 @@ export default function Landing() {
 
         {/* Mobile Nav */}
         {isMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 w-full bg-background border-b border-border py-6 px-6 flex flex-col gap-6 animate-in slide-in-from-top duration-300 shadow-xl">
+          <div id="mobile-nav-menu" className="md:hidden absolute top-full left-0 w-full bg-background border-b border-border py-6 px-6 flex flex-col gap-6 animate-in slide-in-from-top duration-300 shadow-xl">
             {[
               { id: 'how-it-works', label: 'How it Works' },
               { id: 'features', label: 'Features' },
@@ -365,7 +370,7 @@ export default function Landing() {
                 ))}
               </div>
               <p className="text-sm font-bold text-muted-foreground">
-                <span className="text-foreground">2,000+</span> students acing exams
+                <span className="text-foreground">100+</span> students acing exams
               </p>
             </div>
           </div>
@@ -782,12 +787,17 @@ export default function Landing() {
               >
                 <button 
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  aria-expanded={openFaq === i}
+                  aria-controls={`faq-panel-${i}`}
                   className="w-full p-6 text-left flex items-center justify-between hover:bg-muted/50 transition-colors"
                 >
                   <span className="font-bold text-lg">{faq.q}</span>
                   <ChevronDown className={cn("size-5 transition-transform duration-300", openFaq === i && "rotate-180")} />
                 </button>
-                <div className={cn(
+                <div
+                id={`faq-panel-${i}`}
+                role="region"
+                className={cn(
                   "grid transition-all duration-300 ease-in-out",
                   openFaq === i ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
                 )}>
@@ -860,14 +870,18 @@ export default function Landing() {
           <div className="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">© 2026 PrepAI. All rights reserved.</p>
             <div className="flex gap-6">
-               <div className="size-8 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer">
-                  <span className="sr-only">Twitter</span>
-                  <svg className="size-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.84 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
-               </div>
-               <div className="size-8 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer">
-                  <span className="sr-only">GitHub</span>
-                  <svg className="size-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-               </div>
+               <Link to="https://shubhamxd.in" target='_blank'>
+                <div className="size-8 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer">
+                    <span className="sr-only">Twitter</span>
+                    <SquareUserRound />
+                </div>
+               </Link>
+               <Link to={"https://github.com/shubhamxdd/pyq-appl/"} target='_blank'>
+                <div className="size-8 rounded-full bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors cursor-pointer">
+                    <span className="sr-only">GitHub</span>
+                    <svg className="size-4 scale-[1.3]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                </div>
+               </Link>
             </div>
           </div>
         </div>
