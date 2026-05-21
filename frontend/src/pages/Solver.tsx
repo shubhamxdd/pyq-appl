@@ -58,6 +58,10 @@ export default function Solver() {
   const [upgradeMessage, setUpgradeMessage] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    document.title = "AI Tutor | PrepAI";
+  }, []);
+
   // Sync state with URL
   useEffect(() => {
     if (sessionId) {

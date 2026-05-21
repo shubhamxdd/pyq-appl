@@ -4,7 +4,7 @@ import * as z from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/auth';
 import { useAuthStore } from '../store/authStore';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -30,6 +30,10 @@ export default function Login() {
   const setAuth = useAuthStore((state) => state.setAuth);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    document.title = "Sign In | PrepAI";
+  }, []);
 
   const {
     register,

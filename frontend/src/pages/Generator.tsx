@@ -74,6 +74,10 @@ export default function Generator() {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
 
+  useEffect(() => {
+    document.title = "Mock Generator | PrepAI";
+  }, []);
+
   // Sync state with URL
   useEffect(() => {
     if (paperId) {
