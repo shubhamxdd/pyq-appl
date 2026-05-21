@@ -39,6 +39,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { UpgradeModal } from '../components/UpgradeModal';
+import { trackEvent } from '../lib/analytics';
 
 export default function Solver() {
   const queryClient = useQueryClient();
@@ -189,10 +190,16 @@ export default function Solver() {
         const errData = await response.json();
         setUpgradeMessage(errData.detail || "You've reached your question limit.");
         setIsUpgradeModalOpen(true);
+        trackEvent('limit_reached_modal_viewed', { feature: 'solver', message: upgradeMessage });
         setMessages(prev => prev.slice(0, -1));
         setIsStreaming(false);
         return;
       }
+      
+      trackEvent('question_submitted', { 
+        session_id: activeSessionId,
+        num_resources: selectedResources.length 
+      });
 
       if (!response.ok) {
         const errData = await response.json();
