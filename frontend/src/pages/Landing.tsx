@@ -684,7 +684,7 @@ export default function Landing() {
                 ))}
               </div>
 
-              <Button asChild variant="outline" className="w-full h-12 rounded-full font-bold">
+              <Button asChild variant="outline" className="w-full h-12 rounded-full font-bold" onClick={() => trackEvent('plan_button_clicked', { plan: 'free' })}>
                 <Link to="/register">Get Started</Link>
               </Button>
             </Card>
@@ -726,7 +726,7 @@ export default function Landing() {
                 ))}
               </div>
 
-              <Button asChild className="w-full h-12 rounded-full font-bold shadow-lg shadow-primary/25">
+              <Button asChild className="w-full h-12 rounded-full font-bold shadow-lg shadow-primary/25" onClick={() => trackEvent('plan_button_clicked', { plan: 'pro' })}>
                 <Link to="/register">Go Pro Now</Link>
               </Button>
             </Card>
@@ -759,7 +759,7 @@ export default function Landing() {
                 ))}
               </div>
 
-              <Button asChild variant="outline" className="w-full h-12 rounded-full font-bold border-purple-200 hover:bg-purple-50 text-purple-700">
+              <Button asChild variant="outline" className="w-full h-12 rounded-full font-bold border-purple-200 hover:bg-purple-50 text-purple-700" onClick={() => trackEvent('plan_button_clicked', { plan: 'elite' })}>
                 <Link to="/register">Go Elite</Link>
               </Button>
             </Card>
@@ -783,7 +783,13 @@ export default function Landing() {
                 style={{ transitionDelay: `${i * 100}ms` }}
               >
                 <button 
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  onClick={() => {
+                    const isOpening = openFaq !== i;
+                    setOpenFaq(isOpening ? i : null);
+                    if (isOpening) {
+                      trackEvent('faq_opened', { question: faq.q });
+                    }
+                  }}
                   aria-expanded={openFaq === i}
                   aria-controls={`faq-panel-${i}`}
                   className="w-full p-6 text-left flex items-center justify-between hover:bg-muted/50 transition-colors"
