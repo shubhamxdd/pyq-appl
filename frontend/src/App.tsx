@@ -17,6 +17,7 @@ import api from './api/auth';
 import { resourcesApi } from './api/resources';
 import { papersApi } from './api/papers';
 import { useEffect } from 'react';
+import posthog from 'posthog-js';
 
 import { TooltipProvider } from "@/components/ui/tooltip"
 import {
@@ -76,6 +77,10 @@ function Dashboard() {
   useEffect(() => {
     if (user && token) {
       setAuth(user, token);
+      posthog.identify(user.id, {
+        email: user.email,
+        plan: user.plan,
+      });
     }
   }, [user, token, setAuth]);
 

@@ -19,3 +19,5 @@ python-dotenv
 pypdfium2
 pillow
 email-validator
+posthog
+posthog
