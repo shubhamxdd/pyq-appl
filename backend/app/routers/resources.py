@@ -87,7 +87,7 @@ async def upload_resource(
     ext = file.filename.split('.')[-1]
     object_name = f"user_{current_user.id}/{uuid.uuid4()}.{ext}"
     
-    # Upload to DigitalOcean Spaces
+    # Upload to object storage
     file_url = storage_service.upload_file(content, object_name, file.content_type)
     if not file_url:
         raise HTTPException(
@@ -181,8 +181,8 @@ async def delete_resource(
     if not resource:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
     
-    # Delete from Spaces
-    object_name = resource.file_url.replace(f"{settings.SPACES_PUBLIC_URL}/", "")
+    # Delete from object storage
+    object_name = storage_service.key_from_url(resource.file_url)
     success = storage_service.delete_file(object_name)
     
     if not success:

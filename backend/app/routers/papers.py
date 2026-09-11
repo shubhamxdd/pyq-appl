@@ -267,11 +267,9 @@ async def delete_paper(
     
     if output:
         if output.pdf_url:
-            object_name = output.pdf_url.replace(f"{settings.SPACES_PUBLIC_URL}/", "")
-            storage_service.delete_file(object_name)
+            storage_service.delete_file(storage_service.key_from_url(output.pdf_url))
         if output.question_pdf_url:
-            object_name = output.question_pdf_url.replace(f"{settings.SPACES_PUBLIC_URL}/", "")
-            storage_service.delete_file(object_name)
+            storage_service.delete_file(storage_service.key_from_url(output.question_pdf_url))
             
     # Deleting the paper will cascade and delete PaperOutput and paper_resources automatically
     await db.delete(paper)
@@ -382,7 +380,7 @@ async def get_paper_pdf_url(
         logger.error(f"PDF Generation Error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
 
-    # 5. Upload to Spaces
+    # 5. Upload to object storage
     suffix = "questions" if mode == "questions_only" else "full"
     object_name = f"papers/{paper_id}_{suffix}_{uuid.uuid4().hex[:8]}.pdf"
     pdf_url = storage_service.upload_file(pdf_file.getvalue(), object_name)

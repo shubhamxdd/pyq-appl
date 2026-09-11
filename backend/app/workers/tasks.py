@@ -9,7 +9,6 @@ from ..models.resource import Resource
 from ..config import settings
 from ..services.storage import storage_service
 from ..analytics import ph_client
-import httpx
 import pypdfium2 as pdfium
 from PIL import Image
 
@@ -57,16 +56,12 @@ async def extraction_task(ctx, resource_id: str, job_id: str = None):
             # 3. Handle PDF Files
             if resource.filename.lower().endswith('.pdf'):
                 print("📥 [STEP 1/3] Downloading PDF from Storage...")
-                
-                # Handle CDN URL issue
-                download_url = resource.file_url.replace(".cdn.digitaloceanspaces.com", ".digitaloceanspaces.com")
-                
-                async with httpx.AsyncClient(timeout=45.0) as client:
-                    response = await client.get(download_url)
-                    if response.status_code != 200:
-                        raise Exception(f"Storage download failed: HTTP {response.status_code}")
-                    file_content = response.content
-                
+
+                object_name = storage_service.key_from_url(resource.file_url)
+                file_content = storage_service.download_file(object_name)
+                if file_content is None:
+                    raise Exception("Storage download failed")
+
                 print(f"✅ [SUCCESS] Downloaded {len(file_content) / 1024 / 1024:.2f} MB")
                 
                 # 4. Process Pages
@@ -178,10 +173,12 @@ async def extraction_task(ctx, resource_id: str, job_id: str = None):
             
             elif resource.filename.lower().endswith('.txt'):
                 print("📝 [TEXT] Extracting plain text content...")
-                async with httpx.AsyncClient() as client:
-                    response = await client.get(resource.file_url)
-                    resource.extracted_text = response.text
-                    resource.status = "ready"
+                object_name = storage_service.key_from_url(resource.file_url)
+                file_content = storage_service.download_file(object_name)
+                if file_content is None:
+                    raise Exception("Storage download failed")
+                resource.extracted_text = file_content.decode("utf-8", errors="replace")
+                resource.status = "ready"
                     
                 if job_id:
                     job.status = "done"

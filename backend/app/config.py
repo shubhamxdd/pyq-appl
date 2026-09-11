@@ -9,7 +9,8 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
     
-    # DigitalOcean Spaces
+    # Object storage (AWS S3 / any S3-compatible provider).
+    # Names kept as SPACES_* for backwards compatibility.
     SPACES_ENDPOINT: str
     SPACES_KEY: str
     SPACES_SECRET: str

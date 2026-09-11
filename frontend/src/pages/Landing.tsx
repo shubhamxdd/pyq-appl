@@ -31,6 +31,9 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { trackEvent } from '@/lib/analytics';
 
+// Demo PDF shown on the landing page. Configure via VITE_EXAMPLE_PDF_URL.
+const EXAMPLE_PDF_URL = import.meta.env.VITE_EXAMPLE_PDF_URL ?? '#';
+
 export default function Landing() {
   const token = useAuthStore((state) => state.token);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -501,7 +504,7 @@ export default function Landing() {
                   <p className="text-muted-foreground text-sm font-medium leading-relaxed">Download your generated papers to print and practice offline, just like the real deal.</p>
                </div>
                <Button asChild variant="ghost" className="p-0 font-bold text-purple-600 hover:text-purple-700 hover:bg-transparent group/btn">
-                  <a href="https://pyq-space.sfo3.digitaloceanspaces.com/papers/fe472efc-ee7a-4f16-bc82-0ec54a4dc9c1_a370202f.pdf" target="_blank" rel="noopener noreferrer">
+                  <a href={EXAMPLE_PDF_URL} target="_blank" rel="noopener noreferrer">
                     See examples <ArrowRight className="ml-2 size-4 group-hover/btn:translate-x-1 transition-transform" />
                   </a>
                </Button>
